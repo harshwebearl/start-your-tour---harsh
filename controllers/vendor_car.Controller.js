@@ -8,52 +8,65 @@ exports.getVendorCars = async (req, res) => {
   try {
     const tokenData = req.userData;
 
-    // Base pipeline for looking up car details and vendor details
+    // Base pipeline for looking up car and vendor details
     let pipeline = [
       {
         $lookup: {
           from: "cars",
           localField: "car_id",
           foreignField: "_id",
-          as: "car_details"
-        }
+          as: "car_details",
+        },
       },
       {
         $lookup: {
           from: "users",
           localField: "vendor_id",
           foreignField: "_id",
-          as: "vendor_details"
-        }
-      }
+          as: "vendor_details",
+        },
+      },
     ];
 
-    // If token exists, check if it's a vendor
+    // Role-based pipeline modifications
     if (tokenData) {
       const userData = await userschema.findById(tokenData.id);
-
-      // If it's a vendor token, show only their cars
-      if (userData && userData.role === "agency") {
-        pipeline.unshift({
-          $match: {
-            vendor_id: new mongoose.Types.ObjectId(tokenData.id)
-          }
+      if (!userData) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
         });
       }
+
+      if (userData.role === "agency") {
+        // Agency: Show only their cars
+        pipeline.unshift({
+          $match: {
+            vendor_id: new mongoose.Types.ObjectId(tokenData.id),
+          },
+        });
+      } else if (userData.role !== "admin") {
+        // Non-admin, non-agency: Return unauthorized
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to perform this action",
+        });
+      }
+      // Admin: No additional $match, show all cars (including deleted)
+    } else {
+      // No token: Show only active, non-deleted cars
+      pipeline.push({
+        $match: {
+          isDeleted: { $ne: true },
+          status: { $eq: "active" },
+        },
+      });
     }
 
-    // Add conditions for active and available cars
-    pipeline.push(
-      {
-        $match: {
-          isDeleted: { $ne: true },    // Exclude deleted cars
-          status: { $eq: "active" }     // Only show active cars
-        }
-      },
-      {
-        $sort: { createdAt: -1 }       // Sort by latest first
-      }
-    );
+    // Sort by latest first
+    pipeline.push({
+      $sort: { createdAt: -1 },
+    });
 
     // Execute the aggregation
     let vendorData = await VendorCar.aggregate(pipeline);
@@ -62,7 +75,7 @@ exports.getVendorCars = async (req, res) => {
     for (let car of vendorData) {
       // Convert vendor car photos
       car.photos = await Promise.all(
-        car.photos.map(photo => image_url(fn, photo))
+        car.photos.map((photo) => image_url(fn, photo))
       );
 
       // Convert car details photos
@@ -76,139 +89,167 @@ exports.getVendorCars = async (req, res) => {
 
       // Format vendor details (remove sensitive info)
       if (car.vendor_details && car.vendor_details.length > 0) {
-        car.vendor_details = car.vendor_details.map(vendor => ({
+        car.vendor_details = car.vendor_details.map((vendor) => ({
           name: vendor.name,
           email: vendor.email,
           phone: vendor.phone,
           address: vendor.address,
           city: vendor.city,
-          state: vendor.state
+          state: vendor.state,
         }));
       }
     }
 
-    let message = vendor_id
-      ? "Vendor cars found successfully"
-      : "All cars found successfully";
+    // Determine response message
+    let message =
+      tokenData && (await userschema.findById(tokenData.id)).role === "agency"
+        ? "Vendor cars found successfully"
+        : "All cars found successfully";
 
     res.status(200).json({
       success: true,
       message: message,
       total: vendorData.length,
-      data: vendorData
+      data: vendorData,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
   }
-}; exports.getAllVendorCars = async (req, res) => {
+};
+
+exports.getAllVendorCars = async (req, res) => {
   try {
     const tokenData = req.userData;
-    if (tokenData === "") {
+    if (!tokenData) {
       return res.status(401).json({
-        message: "Auth fail"
+        success: false,
+        message: "Authentication failed",
       });
     }
-    const userData = await userschema.find({ _id: tokenData.id });
-    if (userData[0].role !== "agency") {
-      throw new Forbidden("you are not agency");
+
+    const userData = await userschema.findById(tokenData.id);
+    if (!userData) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
-    let vendorData = await VendorCar.aggregate([
+    if (userData.role !== "agency") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to perform this action",
+      });
+    }
+
+    let pipeline = [
       {
         $match: {
-          vendor_id: new mongoose.Types.ObjectId(tokenData.id)
-        }
+          vendor_id: new mongoose.Types.ObjectId(tokenData.id),
+        },
       },
       {
         $lookup: {
           from: "cars",
           localField: "car_id",
           foreignField: "_id",
-          as: "car_details"
-        }
+          as: "car_details",
+        },
       },
       {
-        $sort: { _id: -1 }
-      }
-    ]);
+        $sort: { _id: -1 },
+      },
+    ];
 
-    for (let i = 0; i < vendorData.length; i++) {
-      // Convert photos in vendorData to full image URLs
-      for (let j = 0; j < vendorData[i].photos.length; j++) {
-        vendorData[i].photos[j] = await image_url(fn, vendorData[i].photos[j]);
-      }
+    let vendorData = await VendorCar.aggregate(pipeline);
 
-      // Convert photos in car_details to full image URLs and add to photos array
-      for (let k = 0; k < vendorData[i].car_details.length; k++) {
-        if (vendorData[i].car_details[k].photo) {
-          vendorData[i].car_details[k].photo = await image_url("car_syt", vendorData[i].car_details[k].photo);
-          // vendorData[i].photos.push(carPhotoUrl); // Add car photo URL to photos array
+    for (let car of vendorData) {
+      // Convert vendor car photos
+      car.photos = await Promise.all(
+        car.photos.map((photo) => image_url(fn, photo))
+      );
+
+      // Convert car details photos
+      if (car.car_details && car.car_details.length > 0) {
+        for (let detail of car.car_details) {
+          if (detail.photo) {
+            detail.photo = await image_url("car_syt", detail.photo);
+          }
         }
       }
     }
 
     res.status(200).json({
       success: true,
-      message: "Vendor Car Find Successfully",
-      data: vendorData
+      message: "Vendor cars found successfully",
+      data: vendorData,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
   }
 };
 
 exports.getVendorCarById = async (req, res) => {
   try {
-    let { id } = req.params;
+    const { id } = req.params;
 
-    let vendorData = await VendorCar.aggregate([
+    let pipeline = [
       {
-        $match: { _id: mongoose.Types.ObjectId(id) }
+        $match: { _id: new mongoose.Types.ObjectId(id) },
       },
       {
         $lookup: {
           from: "cars",
           localField: "car_id",
           foreignField: "_id",
-          as: "car_details"
-        }
-      }
-    ]);
+          as: "car_details",
+        },
+      },
+    ];
 
-    for (let i = 0; i < vendorData.length; i++) {
-      // Convert photos in vendorData to full image URLs
-      for (let j = 0; j < vendorData[i].photos.length; j++) {
-        vendorData[i].photos[j] = await image_url(fn, vendorData[i].photos[j]);
-      }
+    let vendorData = await VendorCar.aggregate(pipeline);
 
-      // Convert photos in car_details to full image URLs and add to photos array
-      for (let k = 0; k < vendorData[i].car_details.length; k++) {
-        if (vendorData[i].car_details[k].photo) {
-          vendorData[i].car_details[k].photo = await image_url("car_syt", vendorData[i].car_details[k].photo);
-          // vendorData[i].photos.push(carPhotoUrl); // Add car photo URL to photos array
+    if (!vendorData || vendorData.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor car not found",
+      });
+    }
+
+    for (let car of vendorData) {
+      // Convert vendor car photos
+      car.photos = await Promise.all(
+        car.photos.map((photo) => image_url(fn, photo))
+      );
+
+      // Convert car details photos
+      if (car.car_details && car.car_details.length > 0) {
+        for (let detail of car.car_details) {
+          if (detail.photo) {
+            detail.photo = await image_url("car_syt", detail.photo);
+          }
         }
       }
     }
 
     res.status(200).json({
       success: true,
-      message: "Vendor Car Find Successfully",
-      data: vendorData
+      message: "Vendor car found successfully",
+      data: vendorData[0],
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
   }
 };
@@ -218,35 +259,34 @@ exports.createVendorCar = async (req, res) => {
     const tokenData = req.userData;
     if (!tokenData) {
       return res.status(401).json({
-        message: "Auth fail"
+        success: false,
+        message: "Authentication failed",
       });
     }
 
-    const userData = await userschema.find({ _id: tokenData.id });
-    if (!userData || userData.length === 0) {
+    const userData = await userschema.findById(tokenData.id);
+    if (!userData) {
       return res.status(404).json({
-        message: "User not found"
+        success: false,
+        message: "User not found",
       });
     }
 
-    if (userData[0].role !== "agency") {
-      return res.status(403).json({
-        message: "You are not agency"
-      });
-    }
-
-    // if (!req.files || !req.files.photos || req.files.photos.length === 0) {
-    //     return res.status(400).json({
-    //         message: "No photos uploaded"
-    //     });
-    // }
-
-    let exitsRegistrationNumber = await VendorCar.findOne({ registration_number: req.body.registration_number });
-
-    if (exitsRegistrationNumber) {
+    if (userData.role !== "agency") {
       return res.status(403).json({
         success: false,
-        message: "Registration number already exists"
+        message: "You are not authorized to perform this action",
+      });
+    }
+
+    // Validate registration number uniqueness
+    const existingCar = await VendorCar.findOne({
+      registration_number: req.body.registration_number,
+    });
+    if (existingCar) {
+      return res.status(403).json({
+        success: false,
+        message: "Registration number already exists",
       });
     }
 
@@ -256,7 +296,7 @@ exports.createVendorCar = async (req, res) => {
       car_condition: req.body.car_condition,
       model_year: req.body.model_year,
       insurance: req.body.insurance,
-      photos: req.files.map((file) => file.filename),
+      photos: req.files ? req.files.map((file) => file.filename) : [],
       registration_number: req.body.registration_number,
       color: req.body.color,
       price_per_km: req.body.price_per_km,
@@ -265,20 +305,20 @@ exports.createVendorCar = async (req, res) => {
       city: req.body.city,
       state: req.body.state,
       outStateAllowed: req.body.outStateAllowed,
-      AC: req.body.AC
+      AC: req.body.AC,
     });
 
-    let result = await newVendorCar.save();
+    const result = await newVendorCar.save();
     return res.status(200).json({
       success: true,
-      message: "VenderCar Insert Successfully",
-      data: result
+      message: "Vendor car created successfully",
+      data: result,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
   }
 };
@@ -286,25 +326,39 @@ exports.createVendorCar = async (req, res) => {
 exports.deleteVendorCar = async (req, res) => {
   try {
     const tokenData = req.userData;
-    if (tokenData === "") {
+    if (!tokenData) {
       return res.status(401).json({
-        message: "Auth fail"
+        success: false,
+        message: "Authentication failed",
       });
     }
-    const userData = await userschema.find({ _id: tokenData.id });
-    if (userData[0].role !== "agency") {
-      throw new Forbidden("you are not agency");
+
+    const userData = await userschema.findById(tokenData.id);
+    if (!userData || userData.role !== "agency") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to perform this action",
+      });
     }
-    VendorCar.findById(req.params.id)
-      .then((vendorCar) => {
-        vendorCar.remove().then(() => res.status(200).json({ success: true, message: "Car Deleted Successfully" }));
-      })
-      .catch((err) => res.status(404).json({ novendorcarfound: "No vendor car found" }));
+
+    const vendorCar = await VendorCar.findById(req.params.id);
+    if (!vendorCar) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor car not found",
+      });
+    }
+
+    await vendorCar.remove();
+    res.status(200).json({
+      success: true,
+      message: "Vendor car deleted successfully",
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
   }
 };
@@ -314,14 +368,16 @@ exports.updateVendorCar = async (req, res) => {
     const tokenData = req.userData;
     if (!tokenData) {
       return res.status(401).json({
-        message: "Auth fail"
+        success: false,
+        message: "Authentication failed",
       });
     }
 
     const userData = await userschema.findById(tokenData.id);
     if (!userData || userData.role !== "agency") {
       return res.status(403).json({
-        message: "You are not authorized to perform this action"
+        success: false,
+        message: "You are not authorized to perform this action",
       });
     }
 
@@ -339,50 +395,45 @@ exports.updateVendorCar = async (req, res) => {
       pincode: req.body.pincode,
       city: req.body.city,
       state: req.body.state,
-      allowed: req.body.allowed,
-      AC: req.body.AC
+      outStateAllowed: req.body.outStateAllowed,
+      AC: req.body.AC,
     };
 
-    let previmages1 = Array.isArray(req.body.previmages) ? req.body.previmages : [req.body.previmages];
-
-    console.log("previmages1 " + previmages1);
-
+    // Handle existing and new images
+    let prevImages = Array.isArray(req.body.previmages)
+      ? req.body.previmages
+      : req.body.previmages
+      ? [req.body.previmages]
+      : [];
     const baseUrl = "https://start-your-tour-api.onrender.com/images/vendor_car/";
+    prevImages = prevImages
+      .filter(Boolean)
+      .map((img) => (img.startsWith(baseUrl) ? img.replace(baseUrl, "") : img));
 
-    previmages1 = previmages1.filter(Boolean).map((img) => (img.startsWith(baseUrl) ? img.replace(baseUrl, "") : img));
+    const newImages = req.files ? req.files.map((file) => file.filename) : [];
+    updateData.photos = [...prevImages, ...newImages];
 
-    console.log("IMAGE LOG  " + previmages1);
-
-    // if (req.files && req.files.length > 0) {
-    //   const previmages2 = req.files.map((file) => file.filename);
-    // }
-    let previmages2 = req.files ? req.files.map((file) => file.filename) : [];
-
-    console.log("previmages2 ..." + previmages2);
-
-    updateData.photos = [...previmages1, ...previmages2];
-
-    console.log("data.." + updateData.photos);
-
-    const updatedData = await VendorCar.findByIdAndUpdate(venderCarId, updateData, { new: true });
+    const updatedData = await VendorCar.findByIdAndUpdate(venderCarId, updateData, {
+      new: true,
+    });
 
     if (!updatedData) {
       return res.status(404).json({
         success: false,
-        message: "Vendor Car not found"
+        message: "Vendor car not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: "Vendor Car Updated Successfully",
-      data: updatedData
+      message: "Vendor car updated successfully",
+      data: updatedData,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
   }
 };
@@ -392,61 +443,74 @@ exports.adminVendorCarList = async (req, res) => {
     const tokenData = req.userData;
     if (!tokenData) {
       return res.status(401).json({
-        message: "Auth fail"
+        success: false,
+        message: "Authentication failed",
       });
     }
 
     const userData = await userschema.findById(tokenData.id);
     if (!userData || userData.role !== "admin") {
       return res.status(403).json({
-        message: "You are not authorized to perform this action"
+        success: false,
+        message: "You are not authorized to perform this action",
       });
     }
-    let { vendor_id } = req.query;
-    let adminDisplayList = await VendorCar.aggregate([
+
+    const { vendor_id } = req.query;
+    if (!vendor_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Vendor ID is required",
+      });
+    }
+
+    let pipeline = [
       {
         $match: {
-          vendor_id: new mongoose.Types.ObjectId(vendor_id)
-        }
+          vendor_id: new mongoose.Types.ObjectId(vendor_id),
+        },
       },
       {
         $lookup: {
           from: "cars",
           localField: "car_id",
           foreignField: "_id",
-          as: "car_details"
-        }
-      }
-    ]);
+          as: "car_details",
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+    ];
 
-    for (let i = 0; i < adminDisplayList.length; i++) {
-      // Convert photos in adminDisplayList to full image URLs
-      for (let j = 0; j < adminDisplayList[i].photos.length; j++) {
-        adminDisplayList[i].photos[j] = await image_url(fn, adminDisplayList[i].photos[j]);
-      }
+    let adminDisplayList = await VendorCar.aggregate(pipeline);
 
-      // Convert photos in car_details to full image URLs and add to photos array
-      for (let k = 0; k < adminDisplayList[i].car_details.length; k++) {
-        if (adminDisplayList[i].car_details[k].photo) {
-          adminDisplayList[i].car_details[k].photo = await image_url(
-            "car_syt",
-            adminDisplayList[i].car_details[k].photo
-          );
-          // adminDisplayList[i].photos.push(carPhotoUrl); // Add car photo URL to photos array
+    for (let car of adminDisplayList) {
+      // Convert vendor car photos
+      car.photos = await Promise.all(
+        car.photos.map((photo) => image_url(fn, photo))
+      );
+
+      // Convert car details photos
+      if (car.car_details && car.car_details.length > 0) {
+        for (let detail of car.car_details) {
+          if (detail.photo) {
+            detail.photo = await image_url("car_syt", detail.photo);
+          }
         }
       }
     }
 
     res.status(200).json({
       success: true,
-      message: "Vendor car list display successsfully",
-      data: adminDisplayList
+      message: "Vendor car list retrieved successfully",
+      data: adminDisplayList,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Internal Server Error"
+      message: "Internal Server Error",
     });
   }
 };
