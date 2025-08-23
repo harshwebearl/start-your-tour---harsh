@@ -6,10 +6,9 @@ const fn = "vendor_car";
 
 exports.getVendorCars = async (req, res) => {
   try {
-    // Get query parameters for filtering
-    const { city, minPrice, maxPrice, carType } = req.query;
+    const { vendor_id } = req.query;
 
-    // Build the base aggregation pipeline
+    // Base pipeline for looking up car details and vendor details
     let pipeline = [
       {
         $lookup: {
@@ -18,50 +17,35 @@ exports.getVendorCars = async (req, res) => {
           foreignField: "_id",
           as: "car_details"
         }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "vendor_id",
+          foreignField: "_id",
+          as: "vendor_details"
+        }
       }
     ];
 
-    // Add filters if provided
-    let matchConditions = {};
-
-    if (city) {
-      matchConditions.city = city;
-    }
-
-    if (minPrice) {
-      matchConditions.price_per_km = { $gte: parseFloat(minPrice) };
-    }
-
-    if (maxPrice) {
-      matchConditions.price_per_km = {
-        ...matchConditions.price_per_km,
-        $lte: parseFloat(maxPrice)
-      };
-    }
-
-    // Add match stage if there are any conditions
-    if (Object.keys(matchConditions).length > 0) {
-      pipeline.push({ $match: matchConditions });
-    }
-
-    // Add car type filter if provided
-    if (carType) {
-      pipeline.push({
+    // If vendor_id is provided, filter by that vendor
+    if (vendor_id) {
+      pipeline.unshift({
         $match: {
-          "car_details.type": carType
+          vendor_id: new mongoose.Types.ObjectId(vendor_id)
         }
       });
     }
 
-    // Add sorting
+    // Add sorting by latest first
     pipeline.push({
-      $sort: { price_per_km: 1 } // Sort by price low to high
+      $sort: { createdAt: -1 }
     });
 
     // Execute the aggregation
     let vendorData = await VendorCar.aggregate(pipeline);
 
-    // Process images
+    // Process images and format response data
     for (let car of vendorData) {
       // Convert vendor car photos
       car.photos = await Promise.all(
@@ -76,13 +60,29 @@ exports.getVendorCars = async (req, res) => {
           }
         }
       }
+
+      // Format vendor details (remove sensitive info)
+      if (car.vendor_details && car.vendor_details.length > 0) {
+        car.vendor_details = car.vendor_details.map(vendor => ({
+          name: vendor.name,
+          email: vendor.email,
+          phone: vendor.phone,
+          address: vendor.address,
+          city: vendor.city,
+          state: vendor.state
+        }));
+      }
     }
+
+    let message = vendor_id
+      ? "Vendor cars found successfully"
+      : "All cars found successfully";
 
     res.status(200).json({
       success: true,
-      message: "Cars found successfully",
-      data: vendorData,
-      total: vendorData.length
+      message: message,
+      total: vendorData.length,
+      data: vendorData
     });
 
   } catch (error) {
@@ -92,9 +92,7 @@ exports.getVendorCars = async (req, res) => {
       message: "Internal Server Error"
     });
   }
-};
-
-exports.getAllVendorCars = async (req, res) => {
+}; exports.getAllVendorCars = async (req, res) => {
   try {
     const tokenData = req.userData;
     if (tokenData === "") {
