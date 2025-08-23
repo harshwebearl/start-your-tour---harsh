@@ -6,7 +6,25 @@ const fn = "vendor_car";
 
 exports.getVendorCars = async (req, res) => {
   try {
+    const tokenData = req.userData;
     const { vendor_id } = req.query;
+
+    // Check if user is authenticated
+    if (!tokenData) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication failed"
+      });
+    }
+
+    // Get user data to check role
+    const userData = await userschema.findById(tokenData.id);
+    if (!userData) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
 
     // Base pipeline for looking up car details and vendor details
     let pipeline = [
@@ -28,12 +46,27 @@ exports.getVendorCars = async (req, res) => {
       }
     ];
 
-    // If vendor_id is provided, filter by that vendor
-    if (vendor_id) {
+    // If user is vendor, only show their cars
+    if (userData.role === "agency") {
+      pipeline.unshift({
+        $match: {
+          vendor_id: new mongoose.Types.ObjectId(tokenData.id)
+        }
+      });
+    }
+    // If admin and vendor_id is provided, show specific vendor's cars
+    else if (userData.role === "admin" && vendor_id) {
       pipeline.unshift({
         $match: {
           vendor_id: new mongoose.Types.ObjectId(vendor_id)
         }
+      });
+    }
+    // If customer, show all cars
+    else if (userData.role !== "customer" && userData.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized access"
       });
     }
 
