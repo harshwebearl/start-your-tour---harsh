@@ -7,97 +7,105 @@ const fn = "vendor_car";
 exports.getVendorCars = async (req, res) => {
   try {
     const tokenData = req.userData;
-
-    // Base pipeline for looking up car details and vendor details
-    let pipeline = [
-      {
-        $lookup: {
-          from: "cars",
-          localField: "car_id",
-          foreignField: "_id",
-          as: "car_details"
+    if (tokenData === "") {
+      // If no token, return all active cars
+      let allCars = await VendorCar.aggregate([
+        {
+          $lookup: {
+            from: "cars",
+            localField: "car_id",
+            foreignField: "_id",
+            as: "car_details"
+          }
+        },
+        {
+          $sort: { _id: -1 }
         }
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "vendor_id",
-          foreignField: "_id",
-          as: "vendor_details"
+      ]);
+
+      for (let i = 0; i < allCars.length; i++) {
+        for (let j = 0; j < allCars[i].photos.length; j++) {
+          allCars[i].photos[j] = await image_url(fn, allCars[i].photos[j]);
+        }
+        for (let k = 0; k < allCars[i].car_details.length; k++) {
+          if (allCars[i].car_details[k].photo) {
+            allCars[i].car_details[k].photo = await image_url("car_syt", allCars[i].car_details[k].photo);
+          }
         }
       }
-    ];
 
-    // If token exists, check if it's a vendor
-    if (tokenData) {
-      const userData = await userschema.findById(tokenData.id);
+      return res.status(200).json({
+        success: true,
+        message: "All cars list (no token)",
+        data: allCars
+      });
+    }
+    const userData = await userschema.find({ _id: tokenData.id });
+    if (userData[0].role !== "agency" && userData[0].role !== "customer") {
+      throw new Forbidden("you are not agency");
+    }
 
-      // If it's a vendor token, show only their cars
-      if (userData && userData.role === "agency") {
-        pipeline.unshift({
+    let vendorData = [];
+
+    if (userData[0].role === "agency") {
+      console.log("agency");
+
+      vendorData = await VendorCar.aggregate([
+        {
           $match: {
             vendor_id: new mongoose.Types.ObjectId(tokenData.id)
           }
-        });
-      }
-    }
-
-    // Add conditions for active and available cars
-    pipeline.push(
-      {
-        $match: {
-          isDeleted: { $ne: true },    // Exclude deleted cars
-          status: { $eq: "active" }     // Only show active cars
-        }
-      },
-      {
-        $sort: { createdAt: -1 }       // Sort by latest first
-      }
-    );
-
-    // Execute the aggregation
-    let vendorData = await VendorCar.aggregate(pipeline);
-
-    // Process images and format response data
-    for (let car of vendorData) {
-      // Convert vendor car photos
-      car.photos = await Promise.all(
-        car.photos.map(photo => image_url(fn, photo))
-      );
-
-      // Convert car details photos
-      if (car.car_details && car.car_details.length > 0) {
-        for (let detail of car.car_details) {
-          if (detail.photo) {
-            detail.photo = await image_url("car_syt", detail.photo);
+        },
+        {
+          $lookup: {
+            from: "cars",
+            localField: "car_id",
+            foreignField: "_id",
+            as: "car_details"
           }
+        },
+        {
+          $sort: { _id: -1 }
         }
-      }
-
-      // Format vendor details (remove sensitive info)
-      if (car.vendor_details && car.vendor_details.length > 0) {
-        car.vendor_details = car.vendor_details.map(vendor => ({
-          name: vendor.name,
-          email: vendor.email,
-          phone: vendor.phone,
-          address: vendor.address,
-          city: vendor.city,
-          state: vendor.state
-        }));
-      }
+      ]);
+    } else if (userData[0].role === "customer") {
+      console.log("customer");
+      // Handle customer-specific logic here if needed
+      vendorData = await VendorCar.aggregate([
+        {
+          $lookup: {
+            from: "cars",
+            localField: "car_id",
+            foreignField: "_id",
+            as: "car_details"
+          }
+        },
+        {
+          $sort: { _id: -1 }
+        }
+      ]);
     }
 
-    let message = vendor_id
-      ? "Vendor cars found successfully"
-      : "All cars found successfully";
+    for (let i = 0; i < vendorData.length; i++) {
+      // Convert photos in vendorData to full image URLs
+      for (let j = 0; j < vendorData[i].photos.length; j++) {
+        vendorData[i].photos[j] = await image_url(fn, vendorData[i].photos[j]);
+      }
+
+      // Convert photos in car_details to full image URLs and add to photos array
+      for (let k = 0; k < vendorData[i].car_details.length; k++) {
+        if (vendorData[i].car_details[k].photo) {
+          vendorData[i].car_details[k].photo = await image_url("car_syt", vendorData[i].car_details[k].photo);
+          // vendorData[i].photos.push(carPhotoUrl); // Add car photo URL to photos array
+        }
+      }
+    }
 
     res.status(200).json({
       success: true,
-      message: message,
-      total: vendorData.length,
+      message: "Vendor Car Find Successfully",
       data: vendorData
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -105,7 +113,9 @@ exports.getVendorCars = async (req, res) => {
       message: "Internal Server Error"
     });
   }
-}; exports.getAllVendorCars = async (req, res) => {
+};
+
+exports.getAllVendorCars = async (req, res) => {
   try {
     const tokenData = req.userData;
     if (tokenData === "") {
