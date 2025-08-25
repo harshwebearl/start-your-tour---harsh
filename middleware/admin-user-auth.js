@@ -7,7 +7,7 @@ module.exports = async (req, res, next) => {
     if (req.headers.authorization) {
       token = req.headers.authorization.split(" ")[0];
       // console.log(token);
-      const decoded = await jwt.verify(token, "asd");
+      const decoded = await jwt.verify(token, "WebEarl!1");
       // console.log('token',token);
       req.userData = decoded;
     } else {

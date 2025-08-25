@@ -57,10 +57,10 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: [
-      "http://localhost:3000",
+      "http://localhost:4000",
       "http://localhost:5173",
       "http://3.108.65.195:4000",
-      "https://start-your-tour-1yzk.onrender.com"
+      "https://start-your-tour-harsh.onrender.com"
     ],
     methods: ["GET", "POST"]
   }
