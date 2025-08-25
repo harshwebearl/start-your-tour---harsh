@@ -259,19 +259,45 @@ module.exports = class HomepageController extends BaseController {
         ];
         hotel_syt_display[i].min_room_price = Math.round(minRoomPrice);
       }
+      // Add all car array
+      const VendorCar = require("../models/vendor_car_schema");
+      let allCars = await VendorCar.aggregate([
+        {
+          $lookup: {
+            from: "cars",
+            localField: "car_id",
+            foreignField: "_id",
+            as: "car_details"
+          }
+        },
+        {
+          $sort: { _id: -1 }
+        }
+      ]);
+      for (let i = 0; i < allCars.length; i++) {
+        for (let j = 0; j < allCars[i].photos.length; j++) {
+          allCars[i].photos[j] = await image_url("vendor_car", allCars[i].photos[j]);
+        }
+        for (let k = 0; k < allCars[i].car_details.length; k++) {
+          if (allCars[i].car_details[k].photo) {
+            allCars[i].car_details[k].photo = await image_url("car_syt", allCars[i].car_details[k].photo);
+          }
+        }
+      }
+
       const result = [
         {
           visa_on_Arrival: visa_on_Arrival,
           DestinationData: DestinationData,
           most_lovaed_destionation: Displaymostlovaeddestionation,
           Saftyinformation: adddata,
-          hotel_data: hotel_syt_display
+          hotel_data: hotel_syt_display,
+          all_car: allCars
         }
       ];
 
       return this.sendJSONResponse(
         res,
-
         "data retrived",
         {
           length: 1
@@ -657,16 +683,42 @@ module.exports = class HomepageController extends BaseController {
         }
       }
 
+      // Add all car array
+      const VendorCar = require("../models/vendor_car_schema");
+      let allCars = await VendorCar.aggregate([
+        {
+          $lookup: {
+            from: "cars",
+            localField: "car_id",
+            foreignField: "_id",
+            as: "car_details"
+          }
+        },
+        {
+          $sort: { _id: -1 }
+        }
+      ]);
+      for (let i = 0; i < allCars.length; i++) {
+        for (let j = 0; j < allCars[i].photos.length; j++) {
+          allCars[i].photos[j] = await image_url("vendor_car", allCars[i].photos[j]);
+        }
+        for (let k = 0; k < allCars[i].car_details.length; k++) {
+          if (allCars[i].car_details[k].photo) {
+            allCars[i].car_details[k].photo = await image_url("car_syt", allCars[i].car_details[k].photo);
+          }
+        }
+      }
+
       const result = [
         {
           top_collection: top_collection,
-          best_hotels: best_hotels
+          best_hotels: best_hotels,
+          all_car: allCars
         }
       ];
 
       return this.sendJSONResponse(
         res,
-
         "Data Found",
         {
           length: 1
@@ -874,17 +926,43 @@ module.exports = class HomepageController extends BaseController {
         hotel[i].min_room_price = Math.round(minRoomPrice);
       }
 
+      // Add all car array
+      const VendorCar = require("../models/vendor_car_schema");
+      let allCars = await VendorCar.aggregate([
+        {
+          $lookup: {
+            from: "cars",
+            localField: "car_id",
+            foreignField: "_id",
+            as: "car_details"
+          }
+        },
+        {
+          $sort: { _id: -1 }
+        }
+      ]);
+      for (let i = 0; i < allCars.length; i++) {
+        for (let j = 0; j < allCars[i].photos.length; j++) {
+          allCars[i].photos[j] = await image_url("vendor_car", allCars[i].photos[j]);
+        }
+        for (let k = 0; k < allCars[i].car_details.length; k++) {
+          if (allCars[i].car_details[k].photo) {
+            allCars[i].car_details[k].photo = await image_url("car_syt", allCars[i].car_details[k].photo);
+          }
+        }
+      }
+
       let result = [
         {
           most_lovaed_destionation: Displaymostlovaeddestionation,
           are_you_looking_for: DestinationData,
-          best_hotels: hotel
+          best_hotels: hotel,
+          all_car: allCars
         }
       ];
 
       return this.sendJSONResponse(
         res,
-
         "Data Found",
         {
           length: 1
