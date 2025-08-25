@@ -996,8 +996,8 @@ module.exports = class BidPackage extends BaseController {
         throw new Forbidden("you are not admin");
       }
 
-      const baseHotelPhotoURL = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
-      const photoBaseURL = "https://start-your-tour-api.onrender.com/images/itinary/";
+      const baseHotelPhotoURL = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
+      const photoBaseURL = "https://start-your-tour-harsh.onrender.com/images/itinary/";
 
       const bid_details = await Bidschema.aggregate([
         { $match: { _id: mongoose.Types.ObjectId(bid_id) } },
@@ -1629,7 +1629,7 @@ module.exports = class BidPackage extends BaseController {
       }
 
       const packageProfitMargin = await package_profit_margin.find();
-      const baseHotelPhotoURL = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
+      const baseHotelPhotoURL = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
 
       const getbidDetails = await Bidschema.aggregate([
         {
@@ -2774,7 +2774,7 @@ module.exports = class BidPackage extends BaseController {
   //     const averageStarRating = totalStars / totalReviews;
   //     const totalReview = totalReviews;
 
-  //     const agencyLogoBaseURL = "https://start-your-tour-api.onrender.com/images/agency/"
+  //     const agencyLogoBaseURL = "https://start-your-tour-harsh.onrender.com/images/agency/"
 
   //     for (const entry of bidPackageData) {
 
@@ -3136,7 +3136,7 @@ module.exports = class BidPackage extends BaseController {
 
       console.log("Display Agency All Review:", display_agencys_all_review_package);
 
-      const baseURL = "https://start-your-tour-api.onrender.com/images/agency/";
+      const baseURL = "https://start-your-tour-harsh.onrender.com/images/agency/";
 
       let totalStars = 0;
       let totalReviews = 0;
@@ -3258,7 +3258,7 @@ module.exports = class BidPackage extends BaseController {
         return;
       }
 
-      const baseHotelPhotoURL = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
+      const baseHotelPhotoURL = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
 
       const packageProfitMargin = await package_profit_margin.find();
 

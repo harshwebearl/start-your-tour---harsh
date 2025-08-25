@@ -192,7 +192,7 @@ module.exports = class PackageController extends BaseController {
   //     const package_id = req.query.package_id;
   //     console.log(123);
 
-  //     const baseHotelPhotoURL = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
+  //     const baseHotelPhotoURL = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
 
   //     const packageProfitMargin = await package_profit_margin.find();
 
@@ -403,7 +403,7 @@ module.exports = class PackageController extends BaseController {
 
   //     const package_id = req.query.package_id;
 
-  //     const baseHotelPhotoURL = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
+  //     const baseHotelPhotoURL = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
 
   //     // Find the package profit margin
   //     const packageProfitMargin = await package_profit_margin.find();
@@ -671,7 +671,7 @@ module.exports = class PackageController extends BaseController {
   // async getPackageDetails(req, res) {
   //   try {
   //     const package_id = req.query.package_id;
-  //     const baseHotelPhotoURL = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
+  //     const baseHotelPhotoURL = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
   //     const packageProfitMargin = await package_profit_margin.find();
 
   //     const packageData = await PackageSchema.aggregate([
@@ -1184,7 +1184,7 @@ module.exports = class PackageController extends BaseController {
    async getPackageDetails(req, res) {
     try {
       const package_id = req.query.package_id;
-      const baseHotelPhotoURL = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
+      const baseHotelPhotoURL = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
       const packageProfitMargin = await package_profit_margin.find();
 
       const packageData = await PackageSchema.aggregate([
@@ -1988,7 +1988,7 @@ module.exports = class PackageController extends BaseController {
       // console.log("123");
       const destination_id = req.query.destination_id;
       const category_id = req.query.category_id;
-      const baseHotelPhotoURL = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
+      const baseHotelPhotoURL = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
 
       let data;
       if (destination_id) {
@@ -2497,7 +2497,7 @@ module.exports = class PackageController extends BaseController {
         throw new Forbidden("you are not agency");
       }
 
-      const baseHotelPhotoURL = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
+      const baseHotelPhotoURL = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
 
       let displayData = await PackageSchema.aggregate([
         {

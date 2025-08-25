@@ -1,117 +1,68 @@
 const Forbidden = require("../errors/Forbidden");
 const NotFound = require("../errors/NotFound");
-const adminSchema = require("../models/AdminSchema");
-// const customerSchema = require("../models/customerSchema");
 const BaseController = require("./BaseController");
-const niv = require("node-input-validator");
-// const { generateFilePathForDB } = require("../utils/utility");
 const mongoose = require("mongoose");
-const CustomRequirementSchema = require("../models/custom_requirementsSchema");
+const bcrypt = require("bcrypt");
+const axios = require("axios");
 const userSchema = require("../models/usersSchema");
 const customerSchema = require("../models/customerSchema");
-const { generateDownloadLink, generateFilePathForDB, generateFileDownloadLinkPrefix } = require("../utils/utility");
-const image_url = require("../update_url_path.js");
-const fn = "users";
-const sgMail = require("@sendgrid/mail");
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-const bcrypt = require("bcrypt");
-const Otp = require("../models/otp.js");
-const axios = require("axios");
+const CustomRequirementSchema = require("../models/custom_requirementsSchema");
 const Notificationschema = require("../models/NotificationSchema.js");
+const Otp = require("../models/otp.js");
+const image_url = require("../update_url_path.js");
 const { getReceiverSocketId, io } = require("../socket/socket.js");
+const fn = "users";
 
 module.exports = class UserController extends BaseController {
-  //register user
-  // async register(req, res) {
-  //   try {
-  //     // const tokenData = req.userData;
-
-  //     const usersData = {
-  //       phone: req.body.phone,
-  //       password: req.body.password,
-  //       email_address: req.body.email_address,
-  //       // contect_no: req.body.contect_no,
-  //       role: "customer"
-  //       // status: req.body.status
-  //     };
-  //     // if (req.body?.is_subadmin) {
-  //     //   usersData.is_subadmin = req.body.is_subadmin;
-  //     // }
-  //     // if (tokenData?.id) {
-  //     //   usersData.admin_id = tokenData.id;
-  //     // }
-  //     const schemaData = await userSchema.find({
-  //       phone: usersData.phone,
-  //       role: usersData.role
-  //     });
-  //     console.log(schemaData);
-  //     if (schemaData.length !== 0) {
-  //       throw new Forbidden("Data is Already Registered");
-  //     }
-
-  //     // const email_id_check = await customerSchema.find({
-  //     //   email_address: usersData.email_address,
-  //     // })
-
-  //     // if (email_id_check.length !== 0) {
-  //     //   throw new Forbidden("Mobile Number and email is Already Registered");
-  //     // }
-
-  //     const InsertUsersData = new userSchema(usersData);
-  //     const users_data = await InsertUsersData.save();
-  //     console.log(users_data);
-  //     // const objValidator = new niv.Validator(req.body, {
-  //     //   name: "required",
-  //     //   email_address: "required",
-  //     //   mobile_number: "required",
-  //     //   password: "required",
-  //     //   gender: "required",
-  //     //   state: "required",
-  //     //   city: "required"
-  //     // });
-
-  //     // const matched = await objValidator.check();
-
-  //     // if (!matched) {
-  //     //   throw new Forbidden("Validation Error");
-  //     // }
-
-  //     const data = {
-  //       user_id: users_data.id,
-  //       name: req.body.name,
-  //       email_address: req.body.email_address,
-  //       // mobile_number: req.body.mobile_number,
-  //       // password: req.body.password,
-  //       referal_code: req.body.referal_code,
-  //       gender: req.body.gender,
-  //       state: req.body.state,
-  //       city: req.body.city
-  //     };
-
-  //     // const userdata = await userSchema.find({ mobile_number: data.mobile_number });
-
-  //     // if (userdata.length !== 0) {
-  //     //   throw new Forbidden("data is already exists");
-  //     // }
-  //     const userData = new customerSchema(data);
-  //     const user = await userData.save();
-  //     console.log(user);
-
-  //     return this.sendJSONResponse(
-  //       res,
-  //       "user registered",
-  //       {
-  //         length: 1
-  //       },
-  //       user
-  //     );
-  //   } catch (error) {
-  //     if (error instanceof NotFound) {
-  //       console.log(error); // throw error;
-  //     }
-  //     return this.sendErrorResponse(req, res, error);
-  //   }
-  // }
+  // Register a new user
+  async register(req, res) {
+    try {
+      const hash = await bcrypt.hash(req.body.password, 10);
+      const usersData = {
+        phone: req.body.phone,
+        password: hash,
+        email_address: req.body.email_address,
+        role: "customer"
+      };
+      const schemaData = await userSchema.find({
+        phone: usersData.phone,
+        role: usersData.role
+      });
+      if (schemaData.length !== 0) {
+        return res.status(409).json({ message: "Data is Already Registered" });
+      }
+      let existingCustomer = await customerSchema.findOne({ email_address: req.body.email_address });
+      if (existingCustomer) {
+        return res.status(409).json({ message: "Email is already registered" });
+      }
+      const InsertUsersData = new userSchema(usersData);
+      const users_data = await InsertUsersData.save();
+      const data = {
+        user_id: users_data.id,
+        name: req.body.name,
+        email_address: req.body.email_address,
+        referal_code: req.body.referal_code,
+        gender: req.body.gender,
+        state: req.body.state,
+        city: req.body.city
+      };
+      const userData = new customerSchema(data);
+      const user = await userData.save();
+      let notificationData = await Notificationschema.create({
+        user_id: user.user_id,
+        title: "User Registration Successful",
+        text: `Hello ${user.name}, thank you for registering with Start Your Tour! We're thrilled to have you on board. Explore exciting destinations and make your journey unforgettable.`,
+        user_type: "customer"
+      });
+      const customeradminSocketId = getReceiverSocketId(users_data.id);
+      if (customeradminSocketId) {
+        io.to(customeradminSocketId).emit("newNotification", notificationData);
+      }
+      return this.sendJSONResponse(res, "user registered", { length: 1 }, user);
+    } catch (error) {
+      return this.sendErrorResponse(req, res, error);
+    }
+  }
 
   async register(req, res) {
     try {
@@ -522,32 +473,18 @@ module.exports = class UserController extends BaseController {
   async userInfo(req, res) {
     try {
       const tokenData = req.userData;
-      if (tokenData === "") {
-        return res.status(401).json({
-          message: "Auth fail"
-        });
+      if (!tokenData || !tokenData.id) {
+        return res.status(401).json({ message: "Auth fail: token missing or invalid" });
       }
       const userData = await userSchema.find({ _id: tokenData.id });
-      // const userData = await userSchema.findById(tokenData.id); //rakesh
-
-      // if (!userData) {
-      //   return res.status(404).json({
-      //     message: "User not found"
-      //   });
-      // }
-
-      // if (userData.role !== "customer") {
-      //   throw new Forbidden("You are not a customer");
-      // }
-
+      if (!userData || userData.length === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
       if (userData[0].role !== "customer") {
         throw new Forbidden("you are not a customer");
       }
-
       const userinfo = await userSchema.aggregate([
-        {
-          $match: { _id: mongoose.Types.ObjectId(tokenData.id) }
-        },
+        { $match: { _id: mongoose.Types.ObjectId(tokenData.id) } },
         {
           $lookup: {
             from: "customers",
@@ -563,28 +500,14 @@ module.exports = class UserController extends BaseController {
                 input: "$user_details",
                 as: "userDetail",
                 in: {
-                  $mergeObjects: [
-                    "$$userDetail",
-                    {
-                      photo: {
-                        $concat: ["$$userDetail.photo"]
-                        // image_url,"/images/users/",
-                      }
-                    }
-                  ]
+                  $mergeObjects: ["$$userDetail", { photo: { $concat: ["$$userDetail.photo"] } }]
                 }
               }
             }
           }
         },
-        {
-          $project: {
-            password: 0
-          }
-        }
+        { $project: { password: 0 } }
       ]);
-
-      // Correcting photo display URLs
       for (let i = 0; i < userinfo.length; i++) {
         const user = userinfo[i];
         for (let j = 0; j < user.user_details.length; j++) {
@@ -592,18 +515,10 @@ module.exports = class UserController extends BaseController {
           detail.photo = await image_url(fn, detail.photo);
         }
       }
-
-      return this.sendJSONResponse(
-        res,
-        "user retrieved",
-        {
-          length: 1
-        },
-        userinfo
-      );
+      return this.sendJSONResponse(res, "user retrieved", { length: 1 }, userinfo);
     } catch (error) {
       if (error instanceof NotFound) {
-        console.log(error); // throw error;
+        console.log(error);
       }
       return this.sendErrorResponse(req, res, error);
     }
@@ -752,59 +667,24 @@ module.exports = class UserController extends BaseController {
 
   async updateProfile(req, res, image_url) {
     try {
-      // Extract user data from request
       const tokenData = req.userData;
-      // const filename = req.file.filename;
-      // const photo = await (filename);
-
-      // const objValidator = new niv.Validator(req.body, {
-      //     name: "required",
-      //     contect: "required",
-      //     state: "required",
-      //     city: "required",
-      //     email_address: "required"
-      // });
-
-      // const matched = await objValidator.check();
-
-      // if(!matched){
-      //     throw new Forbidden('Validation Error');
-      // }
-      // const photo = image_url + req.file.filename;
+      if (!tokenData || !tokenData.id) {
+        return res.status(401).json({ message: "Auth fail: token missing or invalid" });
+      }
       let { name, address, state, city, email_address } = req.body;
-      console.log(req.body);
-
-      const data = {
-        name,
-        address,
-        state,
-        city,
-        // photo: photo,//req.file.filename, // Generate photo URL using the provided function
-        email_address
-      };
-
+      const data = { name, address, state, city, email_address };
       if (req.file) {
         data.photo = req.file.filename;
       }
-
       const userData = await customerSchema.findOneAndUpdate({ user_id: tokenData.id }, data, { new: true });
-      console.log(userData);
-      if (userData.length === 0) {
-        throw new Forbidden("user is not found");
+      if (!userData) {
+        return res.status(404).json({ message: "user is not found" });
       }
-
-      return this.sendJSONResponse(
-        res,
-        "user profile updated",
-        {
-          length: 1
-        },
-        userData
-      );
+      return this.sendJSONResponse(res, "user profile updated", { length: 1 }, userData);
     } catch (error) {
       console.log(error);
       if (error instanceof NotFound) {
-        console.log(error); // throw error;
+        console.log(error);
       }
       return this.sendErrorResponse(req, res, error.message);
     }

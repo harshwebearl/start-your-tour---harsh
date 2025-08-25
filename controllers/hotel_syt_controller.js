@@ -2467,7 +2467,7 @@ module.exports = class hotel_controller extends BaseController {
 
   //     // Proceed with filtering rooms by availability, etc.
   //     const availableRooms = [];
-  //     const baseURL = "https://start-your-tour-api.onrender.com/images/room_syt/";
+  //     const baseURL = "https://start-your-tour-harsh.onrender.com/images/room_syt/";
 
   //     for (const room of rooms) {
   //       const minStartDate = room.price_and_date.reduce((minDate, range) =>
@@ -2533,7 +2533,7 @@ module.exports = class hotel_controller extends BaseController {
 
   //     // Step 2: Filter rooms based on availability in bookings
   //     const availableRooms = [];
-  //     let baseURL = "https://start-your-tour-api.onrender.com/images/room_syt/"
+  //     let baseURL = "https://start-your-tour-harsh.onrender.com/images/room_syt/"
   //     for (const room of rooms) {
   //       const bookings = await hotel_booking_syt_Schema.find({
   //         room_id: room._id,
@@ -2720,7 +2720,7 @@ module.exports = class hotel_controller extends BaseController {
 
       // Proceed with filtering rooms by availability, etc.
       const availableRooms = [];
-      const baseURL = "https://start-your-tour-api.onrender.com/images/room_syt/";
+      const baseURL = "https://start-your-tour-harsh.onrender.com/images/room_syt/";
 
       for (const room of rooms) {
         const minStartDate = room.price_and_date.reduce(
@@ -2928,7 +2928,7 @@ module.exports = class hotel_controller extends BaseController {
 
       console.log("previmages1 " + previmages1);
 
-      const baseUrl = "https://start-your-tour-api.onrender.com/images/hotel_syt/";
+      const baseUrl = "https://start-your-tour-harsh.onrender.com/images/hotel_syt/";
 
       previmages1 = previmages1
         .filter(Boolean)

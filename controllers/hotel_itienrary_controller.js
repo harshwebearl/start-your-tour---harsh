@@ -227,7 +227,7 @@ exports.updateHotelItinerary = async (req, res) => {
 
     let previmages1 = Array.isArray(req.body.previmages) ? req.body.previmages : [req.body.previmages];
 
-    const baseUrl = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
+    const baseUrl = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
 
     previmages1 = previmages1.filter(Boolean).map((img) => (img.startsWith(baseUrl) ? img.replace(baseUrl, "") : img));
 

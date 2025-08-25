@@ -232,7 +232,7 @@ module.exports = class AgencyController extends BaseController {
         // }
       ]);
 
-      const baseURL = "https://start-your-tour-api.onrender.com/images/agency/";
+      const baseURL = "https://start-your-tour-harsh.onrender.com/images/agency/";
 
       for (let i = 0; i < display_all_user_list_by_admin.length; i++) {
         for (let j = 0; j < display_all_user_list_by_admin[i].agencypersonal.length; j++) {

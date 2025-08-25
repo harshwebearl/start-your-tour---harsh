@@ -21,7 +21,7 @@ const package_profit_margin = require("../models/package_profit_margin.js");
 const uniqid = require("uniqid");
 const ReviewSchema = require("../models/reviewSchema.js");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-const BASE_URL = "https://start-your-tour-api.onrender.com/images/placephoto/";
+const BASE_URL = "https://start-your-tour-harsh.onrender.com/images/placephoto/";
 
 // Function to get IST time
 function getISTTime() {
@@ -971,7 +971,7 @@ module.exports = class Book_Package extends BaseController {
         }
       };
 
-      const baseHotelPhotoURL = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
+      const baseHotelPhotoURL = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
 
       const display_book_packages = await bookpackageschema.aggregate([
         {
@@ -1897,7 +1897,7 @@ module.exports = class Book_Package extends BaseController {
         }));
       };
 
-      const baseHotelPhotoURL = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
+      const baseHotelPhotoURL = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
 
       // Fetch book package details with aggregation
       const displayBookPackagesDetails = await bookpackageschema.aggregate([

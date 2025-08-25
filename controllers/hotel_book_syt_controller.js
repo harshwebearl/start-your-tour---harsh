@@ -8,8 +8,8 @@ const mongoose = require("mongoose");
 const image_url = require("../update_url_path.js");
 const { getReceiverSocketId, io } = require("../socket/socket.js");
 const package_profit_margin = require("../models/package_profit_margin.js");
-const BASE_URL = "https://start-your-tour-api.onrender.com/images/hotel_syt/";
-const BASE_URL1 = "https://start-your-tour-api.onrender.com/images/room_syt/";
+const BASE_URL = "https://start-your-tour-harsh.onrender.com/images/hotel_syt/";
+const BASE_URL1 = "https://start-your-tour-harsh.onrender.com/images/room_syt/";
 
 module.exports = class hotel_book_syt_Controller extends BaseController {
   async user_booked_hotel(req, res) {

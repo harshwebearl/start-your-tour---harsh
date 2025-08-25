@@ -453,7 +453,7 @@ module.exports = class CustomRequirements extends BaseController {
   //       }
   //       requirementData[i].Destination_category = category;
   //     }
-  //     const baseURL = "https://start-your-tour-api.onrender.com/images/placephoto/";
+  //     const baseURL = "https://start-your-tour-harsh.onrender.com/images/placephoto/";
   //     const final_result = [];
   //     requirementData.forEach((element) => {
   //       final_result.push({
@@ -597,7 +597,7 @@ module.exports = class CustomRequirements extends BaseController {
   //     }
 
   //     // Processing data for display
-  //     const baseURL = "https://start-your-tour-api.onrender.com/images/placephoto/";
+  //     const baseURL = "https://start-your-tour-harsh.onrender.com/images/placephoto/";
   //     const defaultPhoto = "";
   //     const final_result = [];
 
@@ -755,7 +755,7 @@ module.exports = class CustomRequirements extends BaseController {
       }
 
       // Processing data for display
-      const baseURL = "https://start-your-tour-api.onrender.com/images/placephoto/";
+      const baseURL = "https://start-your-tour-harsh.onrender.com/images/placephoto/";
       const defaultPhoto = "";
       const final_result = [];
 

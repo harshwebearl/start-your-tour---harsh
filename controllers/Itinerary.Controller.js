@@ -420,8 +420,8 @@ module.exports = class ItineraryController extends BaseController {
       if (itineraryData == null) {
         throw new Forbidden("package itinerary is not found");
       }
-      const photoBaseURL = "https://start-your-tour-api.onrender.com/images/itinary/";
-      const hotelPhotoBaseURL = "https://start-your-tour-api.onrender.com/images/hotel_itienrary/";
+      const photoBaseURL = "https://start-your-tour-harsh.onrender.com/images/itinary/";
+      const hotelPhotoBaseURL = "https://start-your-tour-harsh.onrender.com/images/hotel_itienrary/";
 
       for (const item of itineraryData) {
         console.log(item.room_id);

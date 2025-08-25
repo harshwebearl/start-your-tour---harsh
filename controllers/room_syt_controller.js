@@ -654,7 +654,7 @@ module.exports = class room_controller extends BaseController {
 
       console.log("previmages1 " + previmages1);
 
-      const baseUrl = "https://start-your-tour-api.onrender.com/images/room_syt/";
+      const baseUrl = "https://start-your-tour-harsh.onrender.com/images/room_syt/";
 
       previmages1 = previmages1
         .filter(Boolean)
