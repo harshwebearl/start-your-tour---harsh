@@ -199,7 +199,7 @@ module.exports = class CustomRequirements extends BaseController {
       let notificationData = await Notificationschema.create({
         user_id: tokenData.id,
         title: "Your Travel Requirement Has Been Added!",
-        text: `Hello ${user.name}, your travel request from ${req.body.departure} to ${req.body.destination} has been successfully submitted for the dates ${req.body.start_date} to ${req.body.end_date}. Our team will review your requirements and reach out to you shortly. Thank you for choosing us for your journey!`,
+        text: `Hello ${user && user.name ? user.name : ''}, your travel request from ${req.body.departure} to ${req.body.destination} has been successfully submitted for the dates ${req.body.start_date} to ${req.body.end_date}. Our team will review your requirements and reach out to you shortly. Thank you for choosing us for your journey!`,
         user_type: "customer"
       });
 
@@ -747,9 +747,15 @@ module.exports = class CustomRequirements extends BaseController {
           meal = meal + "," + requirementData[i].meal_require[j];
         }
         requirementData[i].meal_require = meal;
-        var category = requirementData[i].Destination_category[0].category_name;
-        for (let j = 1; j < requirementData[i].Destination_category.length; j++) {
-          category = category + "," + requirementData[i].Destination_category[j].category_name;
+        // Fix: check if Destination_category[0] exists
+        let category = "";
+        if (requirementData[i].Destination_category && requirementData[i].Destination_category.length > 0 && requirementData[i].Destination_category[0].category_name) {
+          category = requirementData[i].Destination_category[0].category_name;
+          for (let j = 1; j < requirementData[i].Destination_category.length; j++) {
+            if (requirementData[i].Destination_category[j].category_name) {
+              category = category + "," + requirementData[i].Destination_category[j].category_name;
+            }
+          }
         }
         requirementData[i].Destination_category = category;
       }
