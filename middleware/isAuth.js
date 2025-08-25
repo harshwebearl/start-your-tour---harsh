@@ -10,7 +10,7 @@ module.exports = (req, res, next) => {
 
   let decodedToken;
   try {
-    decodedToken = jwt.verify(authHeader, process.env.JWT_ACCESSTOKENSECRET);
+    decodedToken = jwt.verify(authHeader, process.env.JWT_SECRET);
     req.userData = decodedToken;
   } catch (err) {
     req.userData = null;
