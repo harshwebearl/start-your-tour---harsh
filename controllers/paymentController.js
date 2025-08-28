@@ -224,7 +224,7 @@ const car_booking_syt = require("../models/car_booking_syt.js");
 //             destination_arrival_date,
 //             payment,
 //             destination,
-        
+
 
 //         } = req.body;
 //         const merchantTransactionId = uniqid();
@@ -737,7 +737,7 @@ exports.initiate_payment = async (req, res) => {
       merchantTransactionId: merchantTransactionId,
       merchantUserId: MERCHANT_USER_ID,
       amount: amount * 100, // paisa
-      redirectUrl: `https://syt-web-new-dhruv.onrender.com/booking/${merchantTransactionId}`,
+      redirectUrl: `https://start-your-tour-rudra.onrender.com/booking/${merchantTransactionId}`,
       // redirectUrl: `http://localhost:3000/booking-done/${merchantTransactionId}`,
       redirectMode: "REDIRECT",
       mobileNumber: contact_number,
@@ -1066,7 +1066,7 @@ exports.updatePayment = async (req, res) => {
       merchantTransactionId: transaction_id,
       merchantUserId: tokenData.id,
       amount: amount * 100, // paisa
-      redirectUrl: `https://syt-web-new-dhruv.onrender.com${link}/${transaction_id}`,
+      redirectUrl: `https://start-your-tour-rudra.onrender.com${link}/${transaction_id}`,
       redirectMode: "REDIRECT",
       // mobileNumber: mobileNumber,
       paymentInstrument: {
