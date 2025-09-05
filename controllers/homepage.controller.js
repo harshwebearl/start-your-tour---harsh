@@ -10,20 +10,13 @@ const siderSchema = require("../models/sliderSchema");
 const visa_on_Arrival_Schema = require("../models/visa_on_arrival.Schema");
 const { generateFileDownloadLinkPrefix, generateDownloadLink } = require("../utils/utility");
 const image_url = require("../update_url_path.js");
-const fn = "dastinationcategory";
+const fn = "hotel_syt";
 const hotel_model = require("../models/hotel_syt_schema");
 const ReviewSchema = require("../models/reviewSchema.js");
 const package_profit_margin = require("../models/package_profit_margin.js");
 module.exports = class HomepageController extends BaseController {
   async Show_homepage_Data(req, res) {
     try {
-      // const display_slider = await siderSchema.find();
-      // console.log(display_slider);
-      // for (let i = 0; i < display_slider.length; i++) {
-      //   for (let j = 0; j < display_slider[i].photo.length; j++) {
-      //     display_slider[i].photo[j] = generateFileDownloadLinkPrefix(req.localHostURL) + display_slider[i].photo[j];
-      //   }
-      // }
 
       const visa_on_Arrival = await visa_on_Arrival_Schema.aggregate([
         {
