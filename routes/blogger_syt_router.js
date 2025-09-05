@@ -6,6 +6,10 @@ const multer = require("multer");
 // const auth = require("../middleware/auth");
 const blogger_syt_class = new blogger_syt_controller();
 
+// Public routes (no authentication required)
+router.get("/public/list", (req, res) => blogger_syt_class.list_blogger_public(req, res));
+router.get("/public/detail/:id", (req, res) => blogger_syt_class.get_blogger_detail_public(req, res));
+
 const storage = multer.diskStorage({
   destination: "public/images/blogger",
   filename: function (req, file, cb) {
@@ -26,6 +30,7 @@ const upload = multer({
   }
 });
 
+// Admin routes
 router.post("/", upload.single("blog_owner_photo"), (req, res) => blogger_syt_class.add_blogger(req, res));
 router.post("/blogecontent", upload.single("blog_title_photo"), (req, res) =>
   blogger_syt_class.add_blog_content(req, res)

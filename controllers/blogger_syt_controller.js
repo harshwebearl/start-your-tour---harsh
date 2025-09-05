@@ -5,6 +5,7 @@ const userSchema = require("../models/usersSchema");
 const NotFound = require("../errors/NotFound");
 const image_url = require("../update_url_path");
 const Forbidden = require("../errors/Forbidden");
+const BadRequest = require("../errors/BadRequest");
 const fn = "blogger";
 const mongoose = require("mongoose");
 
@@ -111,8 +112,79 @@ module.exports = class Blogger extends BaseController {
     }
   }
 
+  // Get list of all bloggers (Public access - no token required)
+  async list_blogger_public(req, res) {
+    try {
+      const { page = 1, limit = 10, search = '' } = req.query;
+      const skip = (page - 1) * limit;
+      
+      const query = {};
+      if (search) {
+        query['$or'] = [
+          { 'blogger_syt.blog_owner_name': { $regex: search, $options: 'i' } },
+          { blog_title: { $regex: search, $options: 'i' } },
+          { blog_category: { $regex: search, $options: 'i' } }
+        ];
+      }
+
+      const blog_content = await blogger_content_syt_schema.aggregate([
+        {
+          $lookup: {
+            from: "blogger_syts",
+            localField: "blogger_syt_id",
+            foreignField: "_id",
+            as: "blogger_syt"
+          }
+        },
+        { $unwind: "$blogger_syt" },
+        { $match: query },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: parseInt(limit) }
+      ]);
+
+      const total = await blogger_content_syt_schema.countDocuments();
+
+      // Process images
+      for (let i = 0; i < blog_content.length; i++) {
+        blog_content[i].blog_title_photo = await image_url(fn, blog_content[i].blog_title_photo);
+        if (blog_content[i].blogger_syt) {
+          blog_content[i].blogger_syt.blog_owner_photo = await image_url(
+            fn,
+            blog_content[i].blogger_syt.blog_owner_photo
+          );
+        }
+      }
+
+      return this.sendJSONResponse(
+        res,
+        "List of Bloggers",
+        {
+          total,
+          page: parseInt(page),
+          totalPages: Math.ceil(total / limit),
+          length: blog_content.length
+        },
+        blog_content
+      );
+    } catch (error) {
+      return this.sendErrorResponse(req, res, error);
+    }
+  }
+
+  // Get list of all bloggers (Admin access)
   async list_blogger(req, res) {
     try {
+      const tokenData = req.userData;
+      if (!tokenData) {
+        throw new Forbidden("Authentication required");
+      }
+
+      const userData = await userSchema.findById(tokenData.id);
+      if (!userData || userData.role !== "admin") {
+        throw new Forbidden("Admin access required");
+      }
+
       const blog_content = await blogger_content_syt_schema.aggregate([
         {
           $lookup: {
@@ -126,7 +198,7 @@ module.exports = class Blogger extends BaseController {
 
       for (let i = 0; i < blog_content.length; i++) {
         blog_content[i].blog_title_photo = await image_url(fn, blog_content[i].blog_title_photo);
-        if (blog_content[i].blogger_syt.length > 0) {
+        if (blog_content[i].blogger_syt && blog_content[i].blogger_syt.length > 0) {
           blog_content[i].blogger_syt[0].blog_owner_photo = await image_url(
             fn,
             blog_content[i].blogger_syt[0].blog_owner_photo
@@ -150,9 +222,87 @@ module.exports = class Blogger extends BaseController {
     }
   }
 
+  // Get blogger details by ID (Public access - no token required)
+  async get_blogger_detail_public(req, res) {
+    try {
+      const { id } = req.params;
+      
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        throw new BadRequest("Invalid blog ID");
+      }
+
+      const blog_content = await blogger_content_syt_schema.aggregate([
+        {
+          $match: { _id: mongoose.Types.ObjectId(id) }
+        },
+        {
+          $lookup: {
+            from: "blogger_syts",
+            localField: "blogger_syt_id",
+            foreignField: "_id",
+            as: "blogger_syt"
+          }
+        },
+        { $unwind: "$blogger_syt" }
+      ]);
+
+      if (!blog_content || blog_content.length === 0) {
+        throw new NotFound("Blog not found");
+      }
+
+      // Process images
+      blog_content[0].blog_title_photo = await image_url(fn, blog_content[0].blog_title_photo);
+      if (blog_content[0].blogger_syt) {
+        blog_content[0].blogger_syt.blog_owner_photo = await image_url(
+          fn,
+          blog_content[0].blogger_syt.blog_owner_photo
+        );
+      }
+
+      // Get related blogs from the same blogger
+      const related_blogs = await blogger_content_syt_schema.find({
+        blogger_syt_id: blog_content[0].blogger_syt_id,
+        _id: { $ne: blog_content[0]._id }
+      }).limit(3);
+
+      // Process related blogs images
+      for (let blog of related_blogs) {
+        blog.blog_title_photo = await image_url(fn, blog.blog_title_photo);
+      }
+
+      return this.sendJSONResponse(
+        res,
+        "Blog details retrieved successfully",
+        {
+          blog: blog_content[0],
+          related_blogs
+        }
+      );
+    } catch (error) {
+      if (error instanceof NotFound) {
+        throw error;
+      }
+      return this.sendErrorResponse(req, res, error);
+    }
+  }
+
+  // Get blogger details by ID (Admin access)
   async detail_blogger(req, res) {
     try {
+      const tokenData = req.userData;
+      if (!tokenData) {
+        throw new Forbidden("Authentication required");
+      }
+
+      const userData = await userSchema.findById(tokenData.id);
+      if (!userData || userData.role !== "admin") {
+        throw new Forbidden("Admin access required");
+      }
+
       const blogger_content_id = req.query._id;
+      if (!blogger_content_id || !mongoose.Types.ObjectId.isValid(blogger_content_id)) {
+        throw new BadRequest("Invalid blog ID");
+      }
 
       const blog_content = await blogger_content_syt_schema.aggregate([
         {
@@ -165,22 +315,29 @@ module.exports = class Blogger extends BaseController {
             foreignField: "_id",
             as: "blogger_syt"
           }
-        }
+        },
+        { $unwind: "$blogger_syt" }
       ]);
 
+      if (!blog_content || blog_content.length === 0) {
+        throw new NotFound("Blog not found");
+      }
+
       blog_content[0].blog_title_photo = await image_url(fn, blog_content[0].blog_title_photo);
-      blog_content[0].blogger_syt[0].blog_owner_photo = await image_url(
-        fn,
-        blog_content[0].blogger_syt[0].blog_owner_photo
-      );
+      if (blog_content[0].blogger_syt) {
+        blog_content[0].blogger_syt.blog_owner_photo = await image_url(
+          fn,
+          blog_content[0].blogger_syt.blog_owner_photo
+        );
+      }
 
       return this.sendJSONResponse(
         res,
-        "Details of Blog!",
+        "Blog details retrieved successfully",
         {
           length: 1
         },
-        blog_content
+        blog_content[0]
       );
     } catch (error) {
       if (error instanceof NotFound) {
