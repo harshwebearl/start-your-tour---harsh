@@ -10,7 +10,7 @@ const siderSchema = require("../models/sliderSchema");
 const visa_on_Arrival_Schema = require("../models/visa_on_arrival.Schema");
 const { generateFileDownloadLinkPrefix, generateDownloadLink } = require("../utils/utility");
 const image_url = require("../update_url_path.js");
-const fn = "destinationCategory";
+// const fn = "destinationCategory";
 const fx = "hotel_syt";
 const hotel_model = require("../models/hotel_syt_schema");
 const ReviewSchema = require("../models/reviewSchema.js");
@@ -51,7 +51,7 @@ module.exports = class HomepageController extends BaseController {
       // });
       for (let i = 0; i < DestinationData.length; i++) {
         const element = DestinationData[i];
-        element.photo = await image_url(fn, element.photo);
+        element.photo = await image_url(fx, element.photo);
       }
 
       const Displaymostlovaeddestionation = await destinationSchema.aggregate([
