@@ -3,7 +3,7 @@ async function update_path(foldername, data) {
     return null;
   }
   var updated_data;
-  updated_data = "https://start-your-tour-harsh.onrender.com/public/images/" + foldername + "/" + data;
+  updated_data = "https://start-your-tour-harsh.onrender.com/images/" + foldername + "/" + data;
   // console.log(updated_data);
   return updated_data;
 }
