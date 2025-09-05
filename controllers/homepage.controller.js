@@ -14,6 +14,8 @@ const fn = "hotel_syt";
 const hotel_model = require("../models/hotel_syt_schema");
 const ReviewSchema = require("../models/reviewSchema.js");
 const package_profit_margin = require("../models/package_profit_margin.js");
+const blogger_content_syt_schema = require("../models/blogger_content_syt_schema");
+const blogger_syt_schema = require("../models/blogger_syt_schema");
 module.exports = class HomepageController extends BaseController {
   async Show_homepage_Data(req, res) {
     try {
@@ -323,6 +325,30 @@ module.exports = class HomepageController extends BaseController {
         }
       }
 
+      // Fetch top 2 blogs (latest by createdAt)
+      let topBlogs = await blogger_content_syt_schema.aggregate([
+        { $sort: { createdAt: -1 } },
+        { $limit: 2 },
+        {
+          $lookup: {
+            from: "blogger_syts",
+            localField: "blogger_syt_id",
+            foreignField: "_id",
+            as: "blogger_syt"
+          }
+        }
+      ]);
+
+      for (let i = 0; i < topBlogs.length; i++) {
+        topBlogs[i].blog_title_photo = await image_url("blogger", topBlogs[i].blog_title_photo);
+        if (topBlogs[i].blogger_syt.length > 0) {
+          topBlogs[i].blogger_syt[0].blog_owner_photo = await image_url(
+            "blogger",
+            topBlogs[i].blogger_syt[0].blog_owner_photo
+          );
+        }
+      }
+
       const result = [
         {
           visa_on_Arrival: visa_on_Arrival,
@@ -330,7 +356,8 @@ module.exports = class HomepageController extends BaseController {
           most_lovaed_destionation: Displaymostlovaeddestionation,
           Saftyinformation: adddata,
           hotel_data: hotel_syt_display,
-          all_car: allCars
+          all_car: allCars,
+          blogger_syt: topBlogs // 👈 Add this line
         }
       ];
 

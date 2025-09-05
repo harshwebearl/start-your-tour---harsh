@@ -138,7 +138,7 @@ module.exports = class Blogger extends BaseController {
         res,
         "List of Blog!",
         {
-          length: 1
+          length: blog_content.length
         },
         blog_content
       );
