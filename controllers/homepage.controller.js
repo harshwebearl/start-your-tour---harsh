@@ -51,7 +51,7 @@ module.exports = class HomepageController extends BaseController {
       // });
       for (let i = 0; i < DestinationData.length; i++) {
         const element = DestinationData[i];
-        element.photo = await image_url(fx, element.photo);
+        element.photo = await image_url(fn, element.photo);
       }
 
       const Displaymostlovaeddestionation = await destinationSchema.aggregate([
