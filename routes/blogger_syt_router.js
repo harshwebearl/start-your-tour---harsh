@@ -3,7 +3,7 @@ const router = express.Router();
 const blogger_syt_controller = require("../controllers/blogger_syt_controller");
 const multer = require("multer");
 
-
+// const auth = require("../middleware/auth");
 const blogger_syt_class = new blogger_syt_controller();
 
 const storage = multer.diskStorage({
