@@ -37,7 +37,7 @@ router.get("/bloglist", (req, res) => blogger_syt_class.get_blog_content_list(re
 router.get("/blogecontentforuser", (req, res) => blogger_syt_class.get_blog_content_by_id_for_customer(req, res));
 router.get("/blogecontent", (req, res) => blogger_syt_class.get_blog_content_by_id(req, res));
 router.get("/listblogger", (req, res) => blogger_syt_class.get_list_blogger(req, res));
-router.get("/blogecontentbybloggerid", (req, res) => blogger_syt_class.get_blog_content_by_blogger_id(req, res));
+router.get("/listblogger", (req, res) => blogger_syt_class.get_blog_content_by_blogger_id(req, res));
 router.put("/", upload.single("blog_owner_photo"), (req, res) => blogger_syt_class.update_blogger(req, res));
 router.put("/blogecontent", upload.single("blog_title_photo"), (req, res) =>
   blogger_syt_class.update_blog_content(req, res)
