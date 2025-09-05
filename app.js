@@ -195,9 +195,26 @@ app.use(express.urlencoded({ extended: false }));
 // app.use("/", express.static("public"));
 
 // Serve Static Assets
-app.use("/", express.static("public"));
-app.use("/uploads", express.static("uploads"));
-app.use("/assets", express.static("assets"));
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve images from the public/images directory
+app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
+
+// Test endpoint to verify file serving
+app.get('/test-image', (req, res) => {
+  const imagePath = path.join(__dirname, 'public', 'images', 'hotel_syt', 'NH1.jpg');
+  res.sendFile(imagePath, (err) => {
+    if (err) {
+      console.error('Error sending file:', err);
+      res.status(404).send('Image not found');
+    }
+  });
+});
+
+// Serve other static files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.get("/", async (req, res) => {
   res.send("Welcome");
 });
