@@ -11,6 +11,7 @@ const visa_on_Arrival_Schema = require("../models/visa_on_arrival.Schema");
 const { generateFileDownloadLinkPrefix, generateDownloadLink } = require("../utils/utility");
 const image_url = require("../update_url_path.js");
 const fn = "destinationCategory";
+const fx = "hotel_syt";
 const hotel_model = require("../models/hotel_syt_schema");
 const ReviewSchema = require("../models/reviewSchema.js");
 const package_profit_margin = require("../models/package_profit_margin.js");
@@ -243,7 +244,7 @@ module.exports = class HomepageController extends BaseController {
 
       for (let i = 0; i < hotel_syt_display.length; i++) {
         for (let j = 0; j < hotel_syt_display[i].hotel_photo.length; j++) {
-          hotel_syt_display[i].hotel_photo[j] = await image_url(fn, hotel_syt_display[i].hotel_photo[j]);
+          hotel_syt_display[i].hotel_photo[j] = await image_url("hotel_syt", hotel_syt_display[i].hotel_photo[j]);
         }
         let minRoomPrice = null; // Track minimum price for this hotel
         let destinationName = hotel_syt_display[i].state;
@@ -883,6 +884,13 @@ module.exports = class HomepageController extends BaseController {
       }
 
       const DestinationData = await destinationCategorySchema.find({ status: 1 });
+
+      // After fetching DestinationData
+      for (let i = 0; i < DestinationData.length; i++) {
+        if (DestinationData[i].photo) {
+          DestinationData[i].photo = await image_url("destinationCategory", DestinationData[i].photo);
+        }
+      }
 
       const packageProfitMargin = await package_profit_margin.find();
 
