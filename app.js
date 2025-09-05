@@ -195,7 +195,7 @@ app.use(express.urlencoded({ extended: false }));
 // app.use("/", express.static("public"));
 
 // Serve Static Assets
-app.use("/public", express.static("public"));
+app.use("/", express.static("public"));
 app.use("/uploads", express.static("uploads"));
 app.use("/assets", express.static("assets"));
 app.get("/", async (req, res) => {
