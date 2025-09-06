@@ -136,9 +136,14 @@ module.exports = class HomepageController extends BaseController {
             price_per_person: {
               $min: {
                 $map: {
-                  input: "$packages.price_and_date",
-                  as: "price_data",
-                  in: "$$price_data.price_per_person"
+                  input: {
+                    $reduce: {
+                      input: "$packages.price_and_date",
+                      initialValue: [],
+                      in: { $concatArrays: ["$$value", "$$this.price_per_person"] }
+                    }
+                  },
+                  in: "$$this"
                 }
               }
             },
@@ -825,9 +830,14 @@ module.exports = class HomepageController extends BaseController {
             price_per_person: {
               $min: {
                 $map: {
-                  input: "$packages.price_and_date",
-                  as: "price_data",
-                  in: "$$price_data.price_per_person"
+                  input: {
+                    $reduce: {
+                      input: "$packages.price_and_date",
+                      initialValue: [],
+                      in: { $concatArrays: ["$$value", "$$this.price_per_person"] }
+                    }
+                  },
+                  in: "$$this"
                 }
               }
             },
