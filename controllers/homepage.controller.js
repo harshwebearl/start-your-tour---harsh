@@ -123,9 +123,37 @@ module.exports = class HomepageController extends BaseController {
           }
         },
         {
+          $lookup: {
+            from: "packages",
+            localField: "_id",
+            foreignField: "destination",
+            as: "packages"
+          }
+        },
+        {
+          $addFields: {
+            rating: { $ifNull: [{ $avg: "$packages.rating" }, 4.5] },
+            price: {
+              $min: {
+                $map: {
+                  input: "$packages.price_and_date",
+                  as: "price_data",
+                  in: "$$price_data.price_per_person"
+                }
+              }
+            },
+            days: { $first: "$packages.total_days" },
+            nights: { $first: "$packages.total_nights" }
+          }
+        },
+        {
           $project: {
             _id: 1,
             destination_name: 1,
+            rating: 1,
+            price: 1,
+            days: 1,
+            nights: 1,
             place_to_visits: {
               photo: 1
             }
@@ -777,9 +805,37 @@ module.exports = class HomepageController extends BaseController {
           }
         },
         {
+          $lookup: {
+            from: "packages",
+            localField: "_id",
+            foreignField: "destination",
+            as: "packages"
+          }
+        },
+        {
+          $addFields: {
+            rating: { $ifNull: [{ $avg: "$packages.rating" }, 4.5] },
+            price: {
+              $min: {
+                $map: {
+                  input: "$packages.price_and_date",
+                  as: "price_data",
+                  in: "$$price_data.price_per_person"
+                }
+              }
+            },
+            days: { $first: "$packages.total_days" },
+            nights: { $first: "$packages.total_nights" }
+          }
+        },
+        {
           $project: {
             _id: 1,
             destination_name: 1,
+            rating: 1,
+            price: 1,
+            days: 1,
+            nights: 1,
             place_to_visits: {
               photo: 1
             }
