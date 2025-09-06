@@ -14,6 +14,9 @@ const fn = "dastinationcategory";
 const hotel_model = require("../models/hotel_syt_schema");
 const ReviewSchema = require("../models/reviewSchema.js");
 const package_profit_margin = require("../models/package_profit_margin.js");
+const VendorCar = require("../models/vendor_car_schema");
+const blogContentSytModel = require("../models/blogger_content_syt_schema");
+const bloggerSytModel = require("../models/blogger_syt_schema");
 module.exports = class HomepageController extends BaseController {
   async Show_homepage_Data(req, res) {
     try {
@@ -24,7 +27,54 @@ module.exports = class HomepageController extends BaseController {
       //     display_slider[i].photo[j] = generateFileDownloadLinkPrefix(req.localHostURL) + display_slider[i].photo[j];
       //   }
       // }
+      let allCars = await VendorCar.aggregate([
+      {
+        $lookup: {
+          from: "cars",
+          localField: "car_id",
+          foreignField: "_id",
+          as: "car_details"
+        }
+      },
+      {
+        $sort: { _id: -1 }
+      }
+    ]);
 
+    // Process car images
+    for (const car of allCars) {
+      for (let j = 0; j < car.photos.length; j++) {
+        car.photos[j] = await image_url("vendor_car", car.photos[j]);
+      }
+      for (const detail of car.car_details) {
+        if (detail.photo) {
+          detail.photo = await image_url("car_syt", detail.photo);
+        }
+      }
+    }
+    let topBlogs = await blogContentSytModel.aggregate([
+      { $sort: { createdAt: -1 } },
+      { $limit: 2 },
+      {
+        $lookup: {
+          from: "blogger_syts",
+          localField: "blogger_syt_id",
+          foreignField: "_id",
+          as: "blogger_syt"
+        }
+      }
+    ]);
+
+    // Process blog images
+    for (const blog of topBlogs) {
+      blog.blog_title_photo = await image_url("blogger", blog.blog_title_photo);
+      if (blog.blogger_syt && blog.blogger_syt.length > 0) {
+        blog.blogger_syt[0].blog_owner_photo = await image_url(
+          "blogger",
+          blog.blogger_syt[0].blog_owner_photo
+        );
+      }
+    }
       const visa_on_Arrival = await visa_on_Arrival_Schema.aggregate([
         {
           $lookup: {
@@ -259,9 +309,32 @@ module.exports = class HomepageController extends BaseController {
         ];
         hotel_syt_display[i].min_room_price = Math.round(minRoomPrice);
       }
-      // Initialize allCars and topBlogs as empty arrays if not defined
-      const allCars = [];
-      const topBlogs = [];
+      // Using the allCars variable that was already declared at the beginning of the function
+
+      // Process car images
+      for (const car of allCars) {
+        for (let j = 0; j < car.photos.length; j++) {
+          car.photos[j] = await image_url("vendor_car", car.photos[j]);
+        }
+        for (const detail of car.car_details) {
+          if (detail.photo) {
+            detail.photo = await image_url("car_syt", detail.photo);
+          }
+        }
+      }
+
+      // Using the topBlogs variable that was already declared earlier
+
+      // Process blog images
+      for (const blog of topBlogs) {
+        blog.blog_title_photo = await image_url("blogger", blog.blog_title_photo);
+        if (blog.blogger_syt && blog.blogger_syt.length > 0) {
+          blog.blogger_syt[0].blog_owner_photo = await image_url(
+            "blogger",
+            blog.blogger_syt[0].blog_owner_photo
+          );
+        }
+      }
       
       const result = [
         {
@@ -270,8 +343,8 @@ module.exports = class HomepageController extends BaseController {
           most_lovaed_destionation: Displaymostlovaeddestionation,
           Saftyinformation: adddata,
           hotel_data: hotel_syt_display,
-          all_car: allCars.length,
-          blogger_syt: topBlogs.length
+          all_car: allCars,
+          blogger_syt: topBlogs
         }
       ];
 
