@@ -132,8 +132,8 @@ module.exports = class HomepageController extends BaseController {
         },
         {
           $addFields: {
-            rating: { $ifNull: [{ $avg: "$packages.rating" }, 4.5] },
-            price: {
+            avg_rating: { $ifNull: [{ $avg: "$packages.rating" }, 4.5] },
+            price_per_person: {
               $min: {
                 $map: {
                   input: "$packages.price_and_date",
@@ -143,17 +143,24 @@ module.exports = class HomepageController extends BaseController {
               }
             },
             days: { $first: "$packages.total_days" },
-            nights: { $first: "$packages.total_nights" }
+            nights: { $first: "$packages.total_nights" },
+            duration: {
+              $concat: [
+                { $toString: { $first: "$packages.total_days" } },
+                "d | ",
+                { $toString: { $first: "$packages.total_nights" } },
+                "n"
+              ]
+            }
           }
         },
         {
           $project: {
             _id: 1,
             destination_name: 1,
-            rating: 1,
-            price: 1,
-            days: 1,
-            nights: 1,
+            avg_rating: 1,
+            price_per_person: 1,
+            duration: 1,
             place_to_visits: {
               photo: 1
             }
@@ -814,8 +821,8 @@ module.exports = class HomepageController extends BaseController {
         },
         {
           $addFields: {
-            rating: { $ifNull: [{ $avg: "$packages.rating" }, 4.5] },
-            price: {
+            avg_rating: { $ifNull: [{ $avg: "$packages.rating" }, 4.5] },
+            price_per_person: {
               $min: {
                 $map: {
                   input: "$packages.price_and_date",
@@ -825,17 +832,24 @@ module.exports = class HomepageController extends BaseController {
               }
             },
             days: { $first: "$packages.total_days" },
-            nights: { $first: "$packages.total_nights" }
+            nights: { $first: "$packages.total_nights" },
+            duration: {
+              $concat: [
+                { $toString: { $first: "$packages.total_days" } },
+                "d | ",
+                { $toString: { $first: "$packages.total_nights" } },
+                "n"
+              ]
+            }
           }
         },
         {
           $project: {
             _id: 1,
             destination_name: 1,
-            rating: 1,
-            price: 1,
-            days: 1,
-            nights: 1,
+            avg_rating: 1,
+            price_per_person: 1,
+            duration: 1,
             place_to_visits: {
               photo: 1
             }
