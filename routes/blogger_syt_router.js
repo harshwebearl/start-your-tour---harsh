@@ -38,11 +38,41 @@ router.post("/blogecontent", upload.single("blog_title_photo"), (req, res) =>
 router.get("/", (req, res) => blogger_syt_class.list_blogger(req, res));
 router.get("/detail", (req, res) => blogger_syt_class.detail_blogger(req, res));
 router.get("/blogger", (req, res) => blogger_syt_class.get_blogger_by_id(req, res));
+// Blog content routes
 router.get("/bloglist", (req, res) => blogger_syt_class.get_blog_content_list(req, res));
+// Debug route to list all blog contents
+router.get("/debug/blogcontents", async (req, res) => {
+  try {
+    const BlogContent = require('../models/blogger_content_syt_schema');
+    const contents = await BlogContent.find({}).lean();
+    return res.json({
+      count: contents.length,
+      contents: contents.map(c => ({
+        _id: c._id,
+        blog_title: c.blog_title,
+        blog_category: c.blog_category,
+        created_at: c.createdAt,
+        updated_at: c.updatedAt
+      }))
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
 router.get("/blogecontentforuser", (req, res) => blogger_syt_class.get_blog_content_by_id_for_customer(req, res));
-router.get("/blogecontent", (req, res) => blogger_syt_class.get_blog_content_by_id(req, res));
+router.get("/blogecontent", (req, res) => {
+  if (!req.query._id) {
+    return res.status(400).json({ error: "Missing required parameter: _id" });
+  }
+  return blogger_syt_class.get_blog_content_by_id(req, res);
+});
+
+// Blogger list routes
 router.get("/listblogger", (req, res) => blogger_syt_class.get_list_blogger(req, res));
-router.get("/listblogger", (req, res) => blogger_syt_class.get_blog_content_by_blogger_id(req, res));
+router.get("/blogger/content", (req, res) => blogger_syt_class.get_blog_content_by_blogger_id(req, res));
+// Backward compatible route
+router.get("/blogecontentbybloggerid", (req, res) => blogger_syt_class.get_blog_content_by_blogger_id(req, res));
 router.put("/", upload.single("blog_owner_photo"), (req, res) => blogger_syt_class.update_blogger(req, res));
 router.put("/blogecontent", upload.single("blog_title_photo"), (req, res) =>
   blogger_syt_class.update_blog_content(req, res)

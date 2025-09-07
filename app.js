@@ -356,7 +356,6 @@ app.use("/api/hotel_itienrary", hotel_itienrary_router);
 app.use("/api/package_profit_margin", packageProfitMargin);
 app.use("/api/inquiry", inquiryRouter);
 app.use("/api/room_price", room_price_router);
-
 app.use(function (req, res, next) {
   console.log("404:NotFound");
   next(createError(404));
