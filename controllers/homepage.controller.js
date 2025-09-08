@@ -11,71 +11,67 @@ const visa_on_Arrival_Schema = require("../models/visa_on_arrival.Schema");
 const { generateFileDownloadLinkPrefix, generateDownloadLink } = require("../utils/utility");
 const image_url = require("../update_url_path.js");
 const fn = "dastinationcategory";
-const fx = "hotel_syt"
+const fx = "hotel_syt";
 const hotel_model = require("../models/hotel_syt_schema");
 const ReviewSchema = require("../models/reviewSchema.js");
 const package_profit_margin = require("../models/package_profit_margin.js");
 const VendorCar = require("../models/vendor_car_schema");
 const blogContentSytModel = require("../models/blogger_content_syt_schema");
 const bloggerSytModel = require("../models/blogger_syt_schema");
+
 module.exports = class HomepageController extends BaseController {
   async Show_homepage_Data(req, res) {
     try {
-      // const display_slider = await siderSchema.find();
-      // console.log(display_slider);
-      // for (let i = 0; i < display_slider.length; i++) {
-      //   for (let j = 0; j < display_slider[i].photo.length; j++) {
-      //     display_slider[i].photo[j] = generateFileDownloadLinkPrefix(req.localHostURL) + display_slider[i].photo[j];
-      //   }
-      // }
       let allCars = await VendorCar.aggregate([
-      {
-        $lookup: {
-          from: "cars",
-          localField: "car_id",
-          foreignField: "_id",
-          as: "car_details"
-        }
-      },
-      {
-        $sort: { _id: -1 }
-      }
-    ]);
+        {
+          $lookup: {
+            from: "cars",
+            localField: "car_id",
+            foreignField: "_id",
+            as: "car_details",
+          },
+        },
+        {
+          $sort: { _id: -1 },
+        },
+      ]);
 
-    // Process car images
-    for (const car of allCars) {
-      for (let j = 0; j < car.photos.length; j++) {
-        car.photos[j] = await image_url("vendor_car", car.photos[j]);
-      }
-      for (const detail of car.car_details) {
-        if (detail.photo) {
-          detail.photo = await image_url("car_syt", detail.photo);
+      // Process car images
+      for (const car of allCars) {
+        for (let j = 0; j < car.photos.length; j++) {
+          car.photos[j] = await image_url("vendor_car", car.photos[j]);
+        }
+        for (const detail of car.car_details) {
+          if (detail.photo) {
+            detail.photo = await image_url("car_syt", detail.photo);
+          }
         }
       }
-    }
-    let topBlogs = await blogContentSytModel.aggregate([
-      { $sort: { createdAt: -1 } },
-      { $limit: 2 },
-      {
-        $lookup: {
-          from: "blogger_syts",
-          localField: "blogger_syt_id",
-          foreignField: "_id",
-          as: "blogger_syt"
-        }
-      }
-    ]);
 
-    // Process blog images
-    for (const blog of topBlogs) {
-      blog.blog_title_photo = await image_url("blogger", blog.blog_title_photo);
-      if (blog.blogger_syt && blog.blogger_syt.length > 0) {
-        blog.blogger_syt[0].blog_owner_photo = await image_url(
-          "blogger",
-          blog.blogger_syt[0].blog_owner_photo
-        );
+      let topBlogs = await blogContentSytModel.aggregate([
+        { $sort: { createdAt: -1 } },
+        { $limit: 2 },
+        {
+          $lookup: {
+            from: "blogger_syts",
+            localField: "blogger_syt_id",
+            foreignField: "_id",
+            as: "blogger_syt",
+          },
+        },
+      ]);
+
+      // Process blog images
+      for (const blog of topBlogs) {
+        blog.blog_title_photo = await image_url("blogger", blog.blog_title_photo);
+        if (blog.blogger_syt && blog.blogger_syt.length > 0) {
+          blog.blogger_syt[0].blog_owner_photo = await image_url(
+            "blogger",
+            blog.blogger_syt[0].blog_owner_photo
+          );
+        }
       }
-    }
+
       const visa_on_Arrival = await visa_on_Arrival_Schema.aggregate([
         {
           $lookup: {
@@ -89,21 +85,19 @@ module.exports = class HomepageController extends BaseController {
                   from: "destinations",
                   localField: "destination_id",
                   foreignField: "_id",
-                  as: "destinations"
-                }
-              }
-            ]
-          }
-        }
+                  as: "destinations",
+                },
+              },
+            ],
+          },
+        },
       ]);
 
       const DestinationData = await destinationCategorySchema.find({ status: 1 });
       if (DestinationData.length === 0) {
         throw new Forbidden("Destination Data Not Found");
       }
-      // DestinationData.forEach((element) => {
-      //   element.photo = generateFileDownloadLinkPrefix(req.localHostURL) + element.photo;
-      // });
+
       for (let i = 0; i < DestinationData.length; i++) {
         const element = DestinationData[i];
         element.photo = await image_url(fn, element.photo);
@@ -112,24 +106,24 @@ module.exports = class HomepageController extends BaseController {
       const Displaymostlovaeddestionation = await destinationSchema.aggregate([
         {
           $match: {
-            $and: [{ most_loved_destionation: true }]
-          }
+            $and: [{ most_loved_destionation: true }],
+          },
         },
         {
           $lookup: {
             from: "place_to_visits",
             localField: "_id",
             foreignField: "destination_id",
-            as: "place_to_visits"
-          }
+            as: "place_to_visits",
+          },
         },
         {
           $lookup: {
             from: "packages",
             localField: "_id",
             foreignField: "destination",
-            as: "packages"
-          }
+            as: "packages",
+          },
         },
         {
           $addFields: {
@@ -141,12 +135,12 @@ module.exports = class HomepageController extends BaseController {
                     $reduce: {
                       input: "$packages.price_and_date",
                       initialValue: [],
-                      in: { $concatArrays: ["$$value", "$$this.price_per_person"] }
-                    }
+                      in: { $concatArrays: ["$$value", "$$this.price_per_person"] },
+                    },
                   },
-                  in: "$$this"
-                }
-              }
+                  in: "$$this",
+                },
+              },
             },
             days: { $first: "$packages.total_days" },
             nights: { $first: "$packages.total_nights" },
@@ -155,10 +149,10 @@ module.exports = class HomepageController extends BaseController {
                 { $toString: { $first: "$packages.total_days" } },
                 "d | ",
                 { $toString: { $first: "$packages.total_nights" } },
-                "n"
-              ]
-            }
-          }
+                "n",
+              ],
+            },
+          },
         },
         {
           $project: {
@@ -168,22 +162,17 @@ module.exports = class HomepageController extends BaseController {
             price_per_person: 1,
             duration: 1,
             place_to_visits: {
-              photo: 1
-            }
-          }
-        }
+              photo: 1,
+            },
+          },
+        },
       ]);
+
       for (let i = 0; i < Displaymostlovaeddestionation.length; i++) {
-        // Displaymostlovaeddestionation[i].place_to_visits = generateDownloadLink(
-        //   Displaymostlovaeddestionation[i].place_to_visits[0].photo,
-        //   req.localHostURL
-        // );
         Displaymostlovaeddestionation[i].place_to_visits = await image_url(
           "placephoto",
           Displaymostlovaeddestionation[i].place_to_visits[0].photo
         );
-        // Displaymostlovaeddestionation[i].place_to_visits =
-        //   generateFileDownloadLinkPrefix(req.localHostURL) + Displaymostlovaeddestionation[i].place_to_visits[0].photo;
       }
 
       const DisplaySaftyinfo = await DescriptionSchema.aggregate([
@@ -192,27 +181,24 @@ module.exports = class HomepageController extends BaseController {
             from: "safetyinfos",
             localField: "_id",
             foreignField: "description_id",
-            as: "safetyinfo"
-          }
-        }
+            as: "safetyinfo",
+          },
+        },
       ]);
 
       for (let i = 0; i < DisplaySaftyinfo.length; i++) {
         for (let j = 0; j < DisplaySaftyinfo[i].safetyinfo.length; j++) {
-          // DisplaySaftyinfo[i].safetyinfo[j].safetyinfo_photo = generateDownloadLink(
-          //   DisplaySaftyinfo[i].safetyinfo[j].safetyinfo_photo,
-          //   req.localHostURL
-          // );
           DisplaySaftyinfo[i].safetyinfo[j].safetyinfo_photo = await image_url(
             "safetyinfo",
             DisplaySaftyinfo[i].safetyinfo[j].safetyinfo_photo
           );
         }
       }
+
       const info = {
         _id: DisplaySaftyinfo[0]._id,
         description: DisplaySaftyinfo[0].description,
-        __v: DisplaySaftyinfo[0].__v
+        __v: DisplaySaftyinfo[0].__v,
       };
       const safetyinfo = DisplaySaftyinfo[0].safetyinfo;
       const adddata = [{ info: info, safetyinfo: safetyinfo }];
@@ -220,8 +206,8 @@ module.exports = class HomepageController extends BaseController {
       const hotel_syt_display = await hotel_model.aggregate([
         {
           $match: {
-            status: "active"
-          }
+            status: "active",
+          },
         },
         {
           $lookup: {
@@ -231,7 +217,7 @@ module.exports = class HomepageController extends BaseController {
             as: "room",
             pipeline: [
               {
-                $match: { status: "available" }
+                $match: { status: "available" },
               },
               {
                 $lookup: {
@@ -245,33 +231,33 @@ module.exports = class HomepageController extends BaseController {
                       $group: {
                         _id: "$room_id",
                         price_and_date: { $push: "$price_and_date" },
-                        othere_future_agency: { $first: "$othere_future_agency" }
-                      }
-                    }
-                  ]
-                }
+                        othere_future_agency: { $first: "$othere_future_agency" },
+                      },
+                    },
+                  ],
+                },
               },
               {
                 $addFields: {
                   price_and_date: { $arrayElemAt: ["$room_price.price_and_date", 0] },
-                  othere_future_agency: { $arrayElemAt: ["$room_price.othere_future_agency", 0] }
-                }
+                  othere_future_agency: { $arrayElemAt: ["$room_price.othere_future_agency", 0] },
+                },
               },
-              { $unset: "room_price" }
-            ]
-          }
+              { $unset: "room_price" },
+            ],
+          },
         },
         {
           $match: {
-            "room.0": { $exists: true } // Exclude hotels with an empty room array
-          }
+            "room.0": { $exists: true }, // Exclude hotels with an empty room array
+          },
         },
         {
-          $sort: { _id: -1 }
+          $sort: { _id: -1 },
         },
         {
-          $limit: 10
-        }
+          $limit: 10,
+        },
       ]);
 
       const packageProfitMargin = await package_profit_margin.find();
@@ -288,7 +274,7 @@ module.exports = class HomepageController extends BaseController {
         "September",
         "October",
         "November",
-        "December"
+        "December",
       ];
       const currentMonthName = defaultMonths[new Date().getMonth()];
 
@@ -296,11 +282,11 @@ module.exports = class HomepageController extends BaseController {
         for (let j = 0; j < hotel_syt_display[i].hotel_photo.length; j++) {
           hotel_syt_display[i].hotel_photo[j] = await image_url(fx, hotel_syt_display[i].hotel_photo[j]);
         }
-        let minRoomPrice = null; // Track minimum price for this hotel
+        let minRoomPrice = null;
         let destinationName = hotel_syt_display[i].state;
 
         const matchedProfitMargin = packageProfitMargin.find((state) => state.state_name === destinationName);
-        let adminMargin = 10; // Default margin
+        let adminMargin = 10;
 
         if (matchedProfitMargin) {
           const marginData = matchedProfitMargin.month_and_margin_user.find((m) => m.month_name === currentMonthName);
@@ -345,38 +331,12 @@ module.exports = class HomepageController extends BaseController {
         hotel_syt_display[i].profitMargin = [
           {
             state_name: destinationName,
-            margin_percentage: adminMargin
-          }
+            margin_percentage: adminMargin,
+          },
         ];
         hotel_syt_display[i].min_room_price = Math.round(minRoomPrice);
       }
-      // Using the allCars variable that was already declared at the beginning of the function
 
-      // Process car images
-      for (const car of allCars) {
-        for (let j = 0; j < car.photos.length; j++) {
-          car.photos[j] = await image_url("vendor_car", car.photos[j]);
-        }
-        for (const detail of car.car_details) {
-          if (detail.photo) {
-            detail.photo = await image_url("car_syt", detail.photo);
-          }
-        }
-      }
-
-      // Using the topBlogs variable that was already declared earlier
-
-      // Process blog images
-      for (const blog of topBlogs) {
-        blog.blog_title_photo = await image_url("blogger", blog.blog_title_photo);
-        if (blog.blogger_syt && blog.blogger_syt.length > 0) {
-          blog.blogger_syt[0].blog_owner_photo = await image_url(
-            "blogger",
-            blog.blogger_syt[0].blog_owner_photo
-          );
-        }
-      }
-      
       const result = [
         {
           visa_on_Arrival: visa_on_Arrival,
@@ -385,22 +345,14 @@ module.exports = class HomepageController extends BaseController {
           Saftyinformation: adddata,
           hotel_data: hotel_syt_display,
           all_car: allCars,
-          blogger_syt: topBlogs
-        }
+          blogger_syt: topBlogs,
+        },
       ];
 
-      return this.sendJSONResponse(
-        res,
-
-        "data retrived",
-        {
-          length: 1
-        },
-        result
-      );
+      return this.sendJSONResponse(res, "data retrieved", { length: 1 }, result);
     } catch (error) {
       if (error instanceof NotFound) {
-        console.log(error); // throw error;
+        console.log(error);
       }
       return this.sendErrorResponse(req, res, error);
     }
@@ -411,8 +363,8 @@ module.exports = class HomepageController extends BaseController {
       let top_collection = await destinationSchema.aggregate([
         {
           $match: {
-            status: true
-          }
+            status: true,
+          },
         },
         {
           $lookup: {
@@ -422,12 +374,11 @@ module.exports = class HomepageController extends BaseController {
             as: "place_to_visits",
             pipeline: [
               {
-                $limit: 3
-              }
-            ]
-          }
+                $limit: 3,
+              },
+            ],
+          },
         },
-
         {
           $lookup: {
             from: "packages",
@@ -436,97 +387,92 @@ module.exports = class HomepageController extends BaseController {
             as: "Package",
             pipeline: [
               {
-                $match: { status: true }
+                $match: { status: true },
               },
               {
                 $lookup: {
                   from: "itineries",
                   localField: "_id",
                   foreignField: "package_id",
-                  as: "Itinaries"
-                }
+                  as: "Itinaries",
+                },
               },
               {
                 $lookup: {
                   from: "hotel_itienraries",
                   localField: "Itinaries.hotel_itienrary_id",
                   foreignField: "_id",
-                  as: "hotel_itienrary"
-                }
+                  as: "hotel_itienrary",
+                },
               },
               {
                 $match: {
                   $and: [
-                    { "Itinaries.0": { $exists: true } }, // Checks if there's at least one itinerary
-                    { "hotel_itienrary.0": { $exists: true } } // Checks if there's at least one hotel itinerary
-                  ]
-                }
-              }
-            ]
-          }
+                    { "Itinaries.0": { $exists: true } },
+                    { "hotel_itienrary.0": { $exists: true } },
+                  ],
+                },
+              },
+            ],
+          },
         },
         {
           $project: {
             _id: 1,
             destination_name: 1,
             place_to_visits: {
-              photo: 1
+              photo: 1,
             },
             Package: {
               name: 1,
               price_and_date: 1,
               total_days: 1,
-              total_nights: 1
-            }
-          }
-        }
+              total_nights: 1,
+            },
+          },
+        },
       ]);
 
       const destinationReviews = await ReviewSchema.aggregate([
         {
           $addFields: {
-            star_numeric: { $toInt: "$star" } // Convert `star` from string to number
-          }
+            star_numeric: { $toInt: "$star" },
+          },
         },
         {
           $lookup: {
             from: "book_packages",
             localField: "book_package_id",
             foreignField: "_id",
-            as: "booked_package"
-          }
+            as: "booked_package",
+          },
         },
         {
           $unwind: {
             path: "$booked_package",
-            preserveNullAndEmptyArrays: true
-          }
+            preserveNullAndEmptyArrays: true,
+          },
         },
         {
           $lookup: {
             from: "packages",
             localField: "booked_package.package_id",
             foreignField: "_id",
-            as: "package_info"
-          }
+            as: "package_info",
+          },
         },
         {
           $unwind: {
-            path: "$packageInfo",
-            preserveNullAndEmptyArrays: true
-          }
+            path: "$package_info",
+            preserveNullAndEmptyArrays: true,
+          },
         },
-        // {
-        //   $match: {
-        //     "packageInfo._id": { $ne: null }
-        //   }
-        // },
         {
           $group: {
-            _id: "$package_info.destination", // Group by destination_id
-            total_reviews: { $sum: 1 }, // Total number of reviews
-            total_rating: { $sum: "$star_numeric" } // Sum of all ratings
-          }
+            _id: "$package_info.destination",
+            total_reviews: { $sum: 1 },
+            total_rating: { $sum: "$star_numeric" },
+          },
         },
         {
           $project: {
@@ -536,20 +482,19 @@ module.exports = class HomepageController extends BaseController {
               $cond: {
                 if: { $gt: ["$total_reviews", 0] },
                 then: { $divide: ["$total_rating", "$total_reviews"] },
-                else: 0
-              }
-            }
-          }
-        }
+                else: 0,
+              },
+            },
+          },
+        },
       ]);
 
       top_collection = top_collection.filter((destination) => destination.Package && destination.Package.length > 0);
-
       top_collection = top_collection.slice(0, 3);
 
       const reviewMap = {};
       destinationReviews.forEach((review) => {
-        const key = review.destination_id?.toString(); // ✅ Prevent null crash
+        const key = review.destination_id?.toString();
         if (key) {
           reviewMap[key] = review;
         }
@@ -570,14 +515,11 @@ module.exports = class HomepageController extends BaseController {
             if (package1.price_and_date && package1.price_and_date.length > 0) {
               return package1.price_and_date.some((priceEntry) => {
                 const endDate = new Date(priceEntry.price_end_date);
-                console.log(endDate);
                 const currentDateWithoutTime = new Date(currentDate.toDateString());
-
-                // ✅ **If end date is before today, remove package**
                 return endDate >= currentDateWithoutTime;
               });
             }
-            return false; // Exclude packages without valid price_and_date
+            return false;
           });
         }
       }
@@ -588,7 +530,6 @@ module.exports = class HomepageController extends BaseController {
         let selectedStartDate = null;
 
         if (package1.price_and_date && package1.price_and_date.length > 0) {
-          // First check current date range
           for (const priceEntry of package1.price_and_date) {
             const startDate = new Date(priceEntry.price_start_date);
             const endDate = new Date(priceEntry.price_end_date);
@@ -602,7 +543,6 @@ module.exports = class HomepageController extends BaseController {
             }
           }
 
-          // If no current price found, find next available price
           if (minPrice === null) {
             let nearestFutureDate = null;
 
@@ -660,37 +600,30 @@ module.exports = class HomepageController extends BaseController {
           const element = top_collection[i];
 
           if (selectedPackage && minPriceAcrossPackages !== null) {
-            // Calculate admin margin
             const adminMarginPercentage = calculateAdminMargin(
               element.destination_name,
               finalSelectedMonth,
               packageProfitMargins
             );
 
-            // Calculate final price with margin
             const adjustedPrice = minPriceAcrossPackages + (minPriceAcrossPackages * adminMarginPercentage) / 100;
 
-            // Keep only one selected package with required fields and final price
             element.Package = [
               {
                 name: selectedPackage.name,
                 total_days: selectedPackage.total_days,
                 total_nights: selectedPackage.total_nights,
-                price_per_person: Math.round(adjustedPrice) // Round if needed
-              }
+                price_per_person: Math.round(adjustedPrice),
+              },
             ];
           } else {
-            element.Package = []; // No valid package, clear it
+            element.Package = [];
           }
         }
       }
 
       for (let i = 0; i < top_collection.length; i++) {
         for (let j = 0; j < top_collection[i].place_to_visits.length; j++) {
-          // top_collection[i].place_to_visits[j].photo = generateDownloadLink(
-          //   top_collection[i].place_to_visits[j].photo,
-          //   req.localHostURL
-          // );
           top_collection[i].place_to_visits[j].photo = await image_url(
             "placephoto",
             top_collection[i].place_to_visits[j].photo
@@ -701,8 +634,8 @@ module.exports = class HomepageController extends BaseController {
       let best_hotels = await hotel_model.aggregate([
         {
           $match: {
-            status: "active"
-          }
+            status: "active",
+          },
         },
         {
           $lookup: {
@@ -712,7 +645,7 @@ module.exports = class HomepageController extends BaseController {
             as: "room",
             pipeline: [
               {
-                $match: { status: "available" }
+                $match: { status: "available" },
               },
               {
                 $lookup: {
@@ -726,26 +659,26 @@ module.exports = class HomepageController extends BaseController {
                       $group: {
                         _id: "$room_id",
                         price_and_date: { $push: "$price_and_date" },
-                        othere_future_agency: { $first: "$othere_future_agency" }
-                      }
-                    }
-                  ]
-                }
+                        othere_future_agency: { $first: "$othere_future_agency" },
+                      },
+                    },
+                  ],
+                },
               },
               {
                 $addFields: {
                   price_and_date: { $arrayElemAt: ["$room_price.price_and_date", 0] },
-                  othere_future_agency: { $arrayElemAt: ["$room_price.othere_future_agency", 0] }
-                }
+                  othere_future_agency: { $arrayElemAt: ["$room_price.othere_future_agency", 0] },
+                },
               },
-              { $unset: "room_price" }
-            ]
-          }
+              { $unset: "room_price" },
+            ],
+          },
         },
         {
           $match: {
-            "room.0": { $exists: true } // Exclude hotels with an empty room array
-          }
+            "room.0": { $exists: true },
+          },
         },
         {
           $project: {
@@ -755,20 +688,18 @@ module.exports = class HomepageController extends BaseController {
             hotel_description: { $substrCP: ["$hotel_description", 0, 250] },
             hotel_address: { $substrCP: ["$hotel_address", 0, 250] },
             hotel_type: 1,
-            hotel_photo: 1,
             city: 1,
             state: 1,
-            // other: 1,
             status: 1,
-            createdAt: 1
-          }
+            createdAt: 1,
+          },
         },
         {
-          $sort: { createdAt: -1 }
+          $sort: { createdAt: -1 },
         },
         {
-          $limit: 3
-        }
+          $limit: 3,
+        },
       ]);
 
       for (let i = 0; i < best_hotels.length; i++) {
@@ -780,22 +711,14 @@ module.exports = class HomepageController extends BaseController {
       const result = [
         {
           top_collection: top_collection,
-          best_hotels: best_hotels
-        }
+          best_hotels: best_hotels,
+        },
       ];
 
-      return this.sendJSONResponse(
-        res,
-
-        "Data Found",
-        {
-          length: 1
-        },
-        result
-      );
+      return this.sendJSONResponse(res, "Data Found", { length: 1 }, result);
     } catch (error) {
       if (error instanceof NotFound) {
-        console.log(error); // throw error;
+        console.log(error);
       }
       return this.sendErrorResponse(req, res, error);
     }
@@ -806,24 +729,24 @@ module.exports = class HomepageController extends BaseController {
       const Displaymostlovaeddestionation = await destinationSchema.aggregate([
         {
           $match: {
-            $and: [{ most_loved_destionation: true }]
-          }
+            $and: [{ most_loved_destionation: true }],
+          },
         },
         {
           $lookup: {
             from: "place_to_visits",
             localField: "_id",
             foreignField: "destination_id",
-            as: "place_to_visits"
-          }
+            as: "place_to_visits",
+          },
         },
         {
           $lookup: {
             from: "packages",
             localField: "_id",
             foreignField: "destination",
-            as: "packages"
-          }
+            as: "packages",
+          },
         },
         {
           $addFields: {
@@ -835,12 +758,12 @@ module.exports = class HomepageController extends BaseController {
                     $reduce: {
                       input: "$packages.price_and_date",
                       initialValue: [],
-                      in: { $concatArrays: ["$$value", "$$this.price_per_person"] }
-                    }
+                      in: { $concatArrays: ["$$value", "$$this.price_per_person"] },
+                    },
                   },
-                  in: "$$this"
-                }
-              }
+                  in: "$$this",
+                },
+              },
             },
             days: { $first: "$packages.total_days" },
             nights: { $first: "$packages.total_nights" },
@@ -849,10 +772,10 @@ module.exports = class HomepageController extends BaseController {
                 { $toString: { $first: "$packages.total_days" } },
                 "d | ",
                 { $toString: { $first: "$packages.total_nights" } },
-                "n"
-              ]
-            }
-          }
+                "n",
+              ],
+            },
+          },
         },
         {
           $project: {
@@ -862,23 +785,17 @@ module.exports = class HomepageController extends BaseController {
             price_per_person: 1,
             duration: 1,
             place_to_visits: {
-              photo: 1
-            }
-          }
-        }
+              photo: 1,
+            },
+          },
+        },
       ]);
 
       for (let i = 0; i < Displaymostlovaeddestionation.length; i++) {
-        // Displaymostlovaeddestionation[i].place_to_visits = generateDownloadLink(
-        //   Displaymostlovaeddestionation[i].place_to_visits[0].photo,
-        //   req.localHostURL
-        // );
         Displaymostlovaeddestionation[i].place_to_visits = await image_url(
           "placephoto",
           Displaymostlovaeddestionation[i].place_to_visits[0].photo
         );
-        // Displaymostlovaeddestionation[i].place_to_visits =
-        //   generateFileDownloadLinkPrefix(req.localHostURL) + Displaymostlovaeddestionation[i].place_to_visits[0].photo;
       }
 
       const DestinationData = await destinationCategorySchema.find({ status: 1 });
@@ -887,7 +804,7 @@ module.exports = class HomepageController extends BaseController {
 
       let hotel = await hotel_model.aggregate([
         {
-          $match: { status: "active" }
+          $match: { status: "active" },
         },
         {
           $lookup: {
@@ -897,7 +814,7 @@ module.exports = class HomepageController extends BaseController {
             as: "room",
             pipeline: [
               {
-                $match: { status: "available" }
+                $match: { status: "available" },
               },
               {
                 $lookup: {
@@ -911,26 +828,26 @@ module.exports = class HomepageController extends BaseController {
                       $group: {
                         _id: "$room_id",
                         price_and_date: { $push: "$price_and_date" },
-                        othere_future_agency: { $first: "$othere_future_agency" }
-                      }
-                    }
-                  ]
-                }
+                        othere_future_agency: { $first: "$othere_future_agency" },
+                      },
+                    },
+                  ],
+                },
               },
               {
                 $addFields: {
                   price_and_date: { $arrayElemAt: ["$room_price.price_and_date", 0] },
-                  othere_future_agency: { $arrayElemAt: ["$room_price.othere_future_agency", 0] }
-                }
+                  othere_future_agency: { $arrayElemAt: ["$room_price.othere_future_agency", 0] },
+                },
               },
-              { $unset: "room_price" }
-            ]
-          }
+              { $unset: "room_price" },
+            ],
+          },
         },
         {
           $match: {
-            "room.0": { $exists: true } // Exclude hotels with an empty room array
-          }
+            "room.0": { $exists: true },
+          },
         },
         {
           $project: {
@@ -949,14 +866,14 @@ module.exports = class HomepageController extends BaseController {
             min_room_price: 1,
             room: 1,
             createdAt: 1,
-            hotel_review: { $arrayElemAt: ["$hotel_review.star", 0] }
-          }
+            hotel_review: { $arrayElemAt: ["$hotel_review.star", 0] },
+          },
         },
         {
           $sort: {
-            createdAt: -1
-          }
-        }
+            createdAt: -1,
+          },
+        },
       ]);
 
       const defaultMonths = [
@@ -971,7 +888,7 @@ module.exports = class HomepageController extends BaseController {
         "September",
         "October",
         "November",
-        "December"
+        "December",
       ];
       const currentMonthName = defaultMonths[new Date().getMonth()];
 
@@ -979,11 +896,11 @@ module.exports = class HomepageController extends BaseController {
         for (let j = 0; j < hotel[i].hotel_photo.length; j++) {
           hotel[i].hotel_photo[j] = await image_url(fn, hotel[i].hotel_photo[j]);
         }
-        let minRoomPrice = null; // Track minimum price for this hotel
+        let minRoomPrice = null;
         let destinationName = hotel[i].state;
 
         const matchedProfitMargin = packageProfitMargin.find((state) => state.state_name === destinationName);
-        let adminMargin = 10; // Default margin
+        let adminMargin = 10;
 
         if (matchedProfitMargin) {
           const marginData = matchedProfitMargin.month_and_margin_user.find((m) => m.month_name === currentMonthName);
@@ -1028,8 +945,8 @@ module.exports = class HomepageController extends BaseController {
         hotel[i].profitMargin = [
           {
             state_name: destinationName,
-            margin_percentage: adminMargin
-          }
+            margin_percentage: adminMargin,
+          },
         ];
         hotel[i].min_room_price = Math.round(minRoomPrice);
       }
@@ -1038,22 +955,14 @@ module.exports = class HomepageController extends BaseController {
         {
           most_lovaed_destionation: Displaymostlovaeddestionation,
           are_you_looking_for: DestinationData,
-          best_hotels: hotel
-        }
+          best_hotels: hotel,
+        },
       ];
 
-      return this.sendJSONResponse(
-        res,
-
-        "Data Found",
-        {
-          length: 1
-        },
-        result
-      );
+      return this.sendJSONResponse(res, "Data Found", { length: 1 }, result);
     } catch (error) {
       if (error instanceof NotFound) {
-        console.log(error); // throw error;
+        console.log(error);
       }
       return this.sendErrorResponse(req, res, error);
     }
