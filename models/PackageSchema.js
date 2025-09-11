@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Package = require("../models/PackageSchema");
 
 const PackageSchema = new mongoose.Schema(
   {
