@@ -65,6 +65,8 @@ module.exports = class SelectedCategoryPackageController {
         try {
             const { categoryId } = req.query;
             let filter = {};
+            let category_name = null;
+
             if (categoryId) {
                 let objectId;
                 try {
@@ -72,6 +74,7 @@ module.exports = class SelectedCategoryPackageController {
                 } catch (e) {
                     return res.status(400).json({ success: false, message: "Invalid category ID" });
                 }
+                // Always fetch category name for the given ID
                 const category = await DestinationCategory.findById(objectId);
                 if (!category) {
                     return res.status(404).json({
@@ -80,14 +83,18 @@ module.exports = class SelectedCategoryPackageController {
                     });
                 }
                 filter.destination_category_id = categoryId;
+                category_name = category.name;
             }
+
             const selected = await SelectedCategoryPackage.find(filter);
 
-            // Fetch full package details and category name for each selected category
             const data = await Promise.all(selected.map(async (item) => {
-                // Fetch category name
-                const category = await DestinationCategory.findById(item.destination_category_id);
-                const category_name = category ? category.name : null;
+                // Fetch category name for each item
+                let destination_category_name = null;
+                if (item.destination_category_id) {
+                    const category = await DestinationCategory.findById(item.destination_category_id);
+                    destination_category_name = category ? category.category_name : null; // <-- use category_name
+                }
 
                 const packages = await Package.find({
                     _id: { $in: item.package_ids },
@@ -104,12 +111,15 @@ module.exports = class SelectedCategoryPackageController {
 
                 return {
                     ...item.toObject(),
-                    destination_category_name: category_name,
+                    destination_category_name, // <-- will show "Nature", "Historical", etc.
                     packages: mappedPackages
                 };
             }));
 
-            res.json({ success: true, data });
+            res.json({
+                success: true,
+                data
+            });
         } catch (err) {
             res.status(400).json({ success: false, message: err.message });
         }
