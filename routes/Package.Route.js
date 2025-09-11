@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const PackageController = require("../controllers/Package.Controller");
+const PackageController = require("../controllers/package.Controller.js");
 const package = new PackageController();
-const adminUserAuth = require("../middleware/admin-user-auth");
+const adminUserAuth = require("../middleware/admin-user-auth.js");
 const { uploadFile } = require("../middleware/genericMulter.js");
 
-const isAuthAllowed = require("../middleware/isAuthAllowed");
+const isAuthAllowed = require("../middleware/isAuthAllowed.js");
 
 router.post("/", adminUserAuth, (req, res) => package.AddPackages(req, res));
 
