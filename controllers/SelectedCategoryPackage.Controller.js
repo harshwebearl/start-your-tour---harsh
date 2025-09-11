@@ -83,14 +83,17 @@ module.exports = class SelectedCategoryPackageController {
             }
             const selected = await SelectedCategoryPackage.find(filter);
 
-            // Fetch full package details for each selected category
+            // Fetch full package details and category name for each selected category
             const data = await Promise.all(selected.map(async (item) => {
+                // Fetch category name
+                const category = await DestinationCategory.findById(item.destination_category_id);
+                const category_name = category ? category.name : null;
+
                 const packages = await Package.find({
                     _id: { $in: item.package_ids },
                     status: true
                 });
 
-                // Map only required fields
                 const mappedPackages = packages.map(pkg => ({
                     place_name: pkg.name,
                     days_nights: `${pkg.total_days}d | ${pkg.total_nights}n`,
@@ -101,6 +104,7 @@ module.exports = class SelectedCategoryPackageController {
 
                 return {
                     ...item.toObject(),
+                    destination_category_name: category_name,
                     packages: mappedPackages
                 };
             }));
