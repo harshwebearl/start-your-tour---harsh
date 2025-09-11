@@ -10,7 +10,7 @@ const adminSchema = require("../models/AdminSchema");
 const agencySchema = require("../models/Agency_personalSchema");
 const userSchema = require("../models/usersSchema");
 const Notificationschema = require("../models/NotificationSchema");
-const packageSchema = require("../models/PackageSchema");
+const packageSchema = require("../models/packageSchema");
 const { getReceiverSocketId, io } = require("../socket/socket");
 
 module.exports = class reviewController extends BaseController {

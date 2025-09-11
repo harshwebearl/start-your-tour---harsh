@@ -18,7 +18,7 @@ const package_profit_margin = require("../models/package_profit_margin.js");
 const { pipeline } = require("nodemailer/lib/xoauth2/index.js");
 const { getReceiverSocketId, io } = require("../socket/socket.js");
 const Notificationschema = require("../models/NotificationSchema.js");
-const packageSchema = require("../models/PackageSchema.js");
+const packageSchema = require("../models/packageSchema.js");
 
 module.exports = class BidPackage extends BaseController {
   async addBidPackage(req, res) {

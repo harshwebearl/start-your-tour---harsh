@@ -1,6 +1,6 @@
 const BaseController = require("./BaseController");
 const itinerarySchema = require("../models/ItinerarySchema");
-const packageSchema = require("../models/PackageSchema");
+const packageSchema = require("../models/packageSchema.js");
 const Forbidden = require("../errors/Forbidden");
 const NotFound = require("../errors/NotFound");
 const niv = require("node-input-validator");

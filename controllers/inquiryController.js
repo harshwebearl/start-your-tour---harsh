@@ -4,7 +4,7 @@ const userschema = require("../models/usersSchema");
 const Notificationschema = require("../models/NotificationSchema");
 // const packageSchema = require("../models/packageSchema");
 const { getReceiverSocketId, io } = require("../socket/socket");
-const package_schema = require("../models/PackageSchema");
+const package_schema = require("../models/packageSchema");
 const agencySchema = require("../models/Agency_personalSchema");
 
 exports.createInquiry = async (req, res) => {
