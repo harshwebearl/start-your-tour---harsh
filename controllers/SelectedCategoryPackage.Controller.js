@@ -81,7 +81,20 @@ module.exports = class SelectedCategoryPackageController {
                 }
                 filter.destination_category_id = categoryId;
             }
-            const data = await SelectedCategoryPackage.find(filter);
+            const selected = await SelectedCategoryPackage.find(filter);
+
+            // Fetch full package details for each selected category
+            const data = await Promise.all(selected.map(async (item) => {
+                const packages = await Package.find({
+                    _id: { $in: item.package_ids },
+                    status: true
+                });
+                return {
+                    ...item.toObject(),
+                    packages // full package details
+                };
+            }));
+
             res.json({ success: true, data });
         } catch (err) {
             res.status(400).json({ success: false, message: err.message });
