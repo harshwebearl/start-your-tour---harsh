@@ -1,21 +1,8 @@
 const mongoose = require("mongoose");
 
-function getISTTime() {
-  const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC +5:30
-  const now = new Date();
-  const istTime = new Date(now.getTime() + istOffset);
-  return istTime;
-}
-
 const PackageSchema = new mongoose.Schema(
   {
-    user_id: {
-      type: mongoose.Schema.Types.ObjectId
-    },
-    name: {
-      type: String
-      // required: true
-    },
+    name: String,
     // price_per_person: {
     //   type: Number,
     //   // required: true
@@ -135,5 +122,6 @@ const PackageSchema = new mongoose.Schema(
     }
   }
 );
-const packageSchema = new mongoose.model("Package", PackageSchema);
-module.exports = packageSchema;
+
+// Prevent OverwriteModelError
+module.exports = mongoose.models.Package || mongoose.model("Package", PackageSchema);

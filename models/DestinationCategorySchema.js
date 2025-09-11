@@ -19,15 +19,15 @@ const DestinationCategorySchema = new mongoose.Schema(
     },
     status: {
       type: Boolean,
-      default: 1 //1=active,0=block
+      default: 1 // 1=active, 0=block
     }
   },
   {
     timestamps: {
-      currentTime: () => getISTTime() // Use custom function for timestamps
-    }
+      currentTime: () => getISTTime()
+    },
+    collection: "destination_categories"
   }
 );
 
-const destinationCategorySchema = new mongoose.model("Destination_Category", DestinationCategorySchema);
-module.exports = destinationCategorySchema;
+module.exports = mongoose.models.DestinationCategory || mongoose.model("DestinationCategory", DestinationCategorySchema);
