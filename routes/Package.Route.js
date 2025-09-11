@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const PackageController = require("../controllers/package.Controller.js");
+const PackageController = require("../controllers/Package.Controller.js");
 const package = new PackageController();
 const adminUserAuth = require("../middleware/admin-user-auth.js");
 const { uploadFile } = require("../middleware/genericMulter.js");

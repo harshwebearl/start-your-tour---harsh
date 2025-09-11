@@ -1,5 +1,5 @@
 const SelectedCategoryPackage = require("../models/SelectedCategoryPackage");
-const Package = require("../models/packageSchema");
+const Package = require("../models/PackageSchema");
 const DestinationCategory = require("../models/DestinationCategorySchema");
 const Forbidden = require("../errors/Forbidden");
 const NotFound = require("../errors/NotFound");

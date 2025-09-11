@@ -19,7 +19,7 @@ const bcrypt = require("bcrypt");
 const Otp = require("../models/otp.js");
 const axios = require("axios");
 // const package = require("../models/packageSchema");
-const packageSchema = require("../models/packageSchema.js");
+const packageSchema = require("../models/PackageSchema.js");
 
 module.exports = class AdminController extends BaseController {
   //add admins from super admin
