@@ -89,9 +89,19 @@ module.exports = class SelectedCategoryPackageController {
                     _id: { $in: item.package_ids },
                     status: true
                 });
+
+                // Map only required fields
+                const mappedPackages = packages.map(pkg => ({
+                    place_name: pkg.name,
+                    days_nights: `${pkg.total_days}d | ${pkg.total_nights}n`,
+                    rating: pkg.rating || null,
+                    price: pkg.price_and_date?.[0]?.price_per_person || null,
+                    best_time_for_travel: pkg.best_time_for_travel || null
+                }));
+
                 return {
                     ...item.toObject(),
-                    packages // full package details
+                    packages: mappedPackages
                 };
             }));
 
