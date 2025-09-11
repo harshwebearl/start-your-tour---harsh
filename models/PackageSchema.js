@@ -24,7 +24,10 @@ const PackageSchema = new mongoose.Schema(
     ],
 
     meal_required: { type: [String], default: [] }, // e.g. ["breakfast","lunch"]
-    meal_type: { type: String, enum: ["veg", "nonveg", "any"], default: "any" },
+     meal_type: {
+      type: String
+      // required: true //0=nonveg , 1=veg,any
+    },
 
     travel_by: { type: String }, // e.g. flight, train, bus
     sightseeing: { type: String },
