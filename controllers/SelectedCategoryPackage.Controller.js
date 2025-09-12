@@ -102,6 +102,7 @@ module.exports = class SelectedCategoryPackageController {
                 });
 
                 const mappedPackages = packages.map(pkg => ({
+                    _id: pkg._id,
                     place_name: pkg.name,
                     days_nights: `${pkg.total_days}d | ${pkg.total_nights}n`,
                     rating: pkg.rating || null,
