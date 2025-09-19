@@ -964,9 +964,7 @@ module.exports = class destinationnameController extends BaseController {
       let package_margin = await package_profit_margin.find();
       const destination_id = req.query.destination_id;
       const currentDate = new Date();
-
       const startDateFilter = req.query.start_date ? new Date(req.query.start_date) : null;
-
       const monthNames = [
         "January",
         "February",
@@ -1041,8 +1039,8 @@ module.exports = class destinationnameController extends BaseController {
               {
                 $match: {
                   $and: [
-                    { "Itinaries.0": { $exists: true } }, // Checks if there's at least one itinerary
-                    { "hotel_itienrary.0": { $exists: true } } // Checks if there's at least one hotel itinerary
+                    { "Itinaries.0": { $exists: true } },
+                    { "hotel_itienrary.0": { $exists: true } }
                   ]
                 }
               }
@@ -1062,15 +1060,15 @@ module.exports = class destinationnameController extends BaseController {
       const packageReviews = await ReviewSchema.aggregate([
         {
           $addFields: {
-            star_numeric: { $toInt: "$star" } // Convert `star` from string to number
+            star_numeric: { $toInt: "$star" }
           }
         },
         {
           $group: {
             _id: "$book_package_id",
-            total_reviews: { $sum: 1 }, // Total number of reviews
-            total_rating: { $sum: "$star_numeric" }, // Sum of all ratings
-            rating_count: { $sum: { $cond: [{ $gt: ["$star_numeric", 0] }, 1, 0] } } // Count only valid ratings
+            total_reviews: { $sum: 1 },
+            total_rating: { $sum: "$star_numeric" },
+            rating_count: { $sum: { $cond: [{ $gt: ["$star_numeric", 0] }, 1, 0] } }
           }
         },
         {
@@ -1111,51 +1109,50 @@ module.exports = class destinationnameController extends BaseController {
             package_id: "$packageInfo._id",
             package_name: "$packageInfo.name",
             total_reviews: 1,
-            rating_count: 1, // Number of valid ratings
-            total_rating: 1, // Sum of all ratings
+            rating_count: 1,
+            total_rating: 1,
             avg_rating: {
               $cond: {
-                if: { $gt: ["$rating_count", 0] }, // If there are valid ratings
-                then: { $divide: ["$total_rating", "$rating_count"] }, // Compute average
-                else: 0 // Otherwise, set 0
+                if: { $gt: ["$rating_count", 0] },
+                then: { $divide: ["$total_rating", "$rating_count"] },
+                else: 0
               }
             }
           }
         }
       ]);
 
+      // Save original packages for fallback
+      for (let i = 0; i < destinationDetails.length; i++) {
+        if (destinationDetails[i].Packages) {
+          destinationDetails[i]._allPackages = [...destinationDetails[i].Packages];
+        }
+      }
+
       // Filter Packages based on the provided date range
       for (let i = 0; i < destinationDetails.length; i++) {
         if (destinationDetails[i].Packages) {
-          destinationDetails[i].Packages = destinationDetails[i].Packages.filter((package1) => {
+          const filtered = destinationDetails[i].Packages.filter((package1) => {
             if (package1.price_and_date && package1.price_and_date.length > 0) {
               if (!startDateFilter) {
                 return package1.price_and_date.some((priceEntry) => {
                   const endDate = new Date(priceEntry.price_end_date);
                   const endDateWithoutTime = new Date(endDate.toDateString());
                   const currentDateWithoutTime = new Date(currentDate.toDateString());
-
-                  // Exclude package if its end date is in the past
                   if (endDate <= currentDateWithoutTime) {
                     return false;
                   }
                   return true;
                 });
               }
-
               return package1.price_and_date.some((priceEntry) => {
                 const startDate = new Date(priceEntry.price_start_date);
                 const endDate = new Date(priceEntry.price_end_date);
-
                 const endDateWithoutTime = new Date(endDate.toDateString());
                 const currentDateWithoutTime = new Date(currentDate.toDateString());
-
                 if (endDate <= currentDateWithoutTime) {
                   return false;
                 }
-                // return endDateWithoutTime >= currentDateWithoutTime;
-
-                // Check if the package's date range overlaps with the filter range
                 return (
                   (startDate >= startDateFilter && startDate <= startDateFilter) ||
                   (endDate >= startDateFilter && endDate <= startDateFilter) ||
@@ -1163,57 +1160,49 @@ module.exports = class destinationnameController extends BaseController {
                 );
               });
             }
-            return false; // Exclude packages without valid price_and_date
+            return false;
           });
+          // If filtered is empty, fall back to all packages
+          if (filtered.length === 0) {
+            destinationDetails[i].Packages = [...destinationDetails[i]._allPackages];
+          } else {
+            destinationDetails[i].Packages = filtered;
+          }
         }
       }
+
       // Process Packages to maintain the original response structure
       for (let i = 0; i < destinationDetails.length; i++) {
         if (destinationDetails[i].Packages) {
           for (let j = 0; j < destinationDetails[i].Packages.length; j++) {
             const package1 = destinationDetails[i].Packages[j];
-
-            // Update photo URL for place
             if (package1.Place && package1.Place[0] && package1.Place[0].photo) {
               package1.Place[0].photo = await image_url(fn, package1.Place[0].photo);
             }
-
-            // Find the nearest start date from price_and_date
             let nearestStartDate = null;
             let nearestPriceEntry = null;
-            console.log(nearestStartDate);
-
             if (package1.price_and_date && package1.price_and_date.length > 0) {
               let priceFound = false;
               for (let k = 0; k < package1.price_and_date.length; k++) {
                 const priceEntry = package1.price_and_date[k];
                 const startDate = new Date(priceEntry.price_start_date);
                 const endDate = new Date(priceEntry.price_end_date);
-
-                console.log("Checking Start Date:", startDate);
-
                 if (!nearestStartDate || startDate < nearestStartDate) {
                   nearestStartDate = startDate;
                   nearestPriceEntry = priceEntry;
                 }
-
                 if (currentDate >= startDate && currentDate <= endDate) {
                   package1.price_per_person = priceEntry.price_per_person;
                   priceFound = true;
                   break;
                 }
               }
-
-              // If no price is found, set the nearest one
               if (!priceFound && nearestPriceEntry) {
                 package1.price_per_person = nearestPriceEntry.price_per_person;
               }
             }
-
-            // Ensure nearestStartDate is defined before using it
             if (nearestStartDate) {
               const currentMonthName = monthNames[nearestStartDate.getMonth()];
-
               const filteredProfitMargin = package_margin
                 .filter((state) => state.state_name === destinationDetails[i].destination_name)
                 .map((state) => ({
@@ -1222,22 +1211,17 @@ module.exports = class destinationnameController extends BaseController {
                     (margin) => margin.month_name === currentMonthName
                   )
                 }));
-
               let marginPercentage = 10;
-
               if (filteredProfitMargin.length > 0 && filteredProfitMargin[0].month_and_margin_user.length > 0) {
                 marginPercentage = parseFloat(filteredProfitMargin[0].month_and_margin_user[0].margin_percentage);
               }
-
               const finalPrice = package1.price_per_person + package1.price_per_person * (marginPercentage / 100);
               package1.price_per_person = Math.round(finalPrice);
-
               if (j === 0 || package1.price_per_person < destinationDetails[i].Package_price) {
                 destinationDetails[i].Package_price = package1.price_per_person;
               }
             }
           }
-
           for (let j = 0; j < destinationDetails[i].Place_to_Visit.length; j++) {
             destinationDetails[i].Place_to_Visit[j].photo = await image_url(
               fn,
@@ -1259,6 +1243,7 @@ module.exports = class destinationnameController extends BaseController {
 
       const placeToVisit = destinationDetails[0].Place_to_Visit;
       let Package = destinationDetails[0].Packages;
+      if (!Array.isArray(Package)) Package = [];
       Package.forEach((element) => {
         element.hotel_type = element.hotel_type[0];
         element.Place = element.Place[0].photo;
@@ -1277,7 +1262,6 @@ module.exports = class destinationnameController extends BaseController {
         }
       });
 
-      // Inject avg_rating into Packages
       destinationDetails.forEach((destination) => {
         if (destination.Packages) {
           destination.Packages.forEach((pkg) => {
