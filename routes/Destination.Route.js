@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const destinationnameController = require("../controllers/Destination.Controller");
+
+const destinationnameController = require("../controllers/destination.controller.js");
 const DestinationController = new destinationnameController();
 
 router.post("/", (req, res) => DestinationController.RegisterDestination(req, res));

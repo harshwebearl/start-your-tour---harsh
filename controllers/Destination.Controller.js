@@ -1,7 +1,7 @@
 const BaseController = require("./BaseController");
 const Forbidden = require("../errors/Forbidden");
 const NotFound = require("../errors/NotFound");
-const SelectedDestination = require("../models/SelectedDestination");
+const DestinationSchema = require("../models/DestinationSchema");
 const niv = require("node-input-validator");
 const mongoose = require("mongoose");
 // const userSchema = require("../models/customerSchema");
@@ -14,32 +14,6 @@ const package_profit_margin = require("../models/package_profit_margin.js");
 const ReviewSchema = require("../models/reviewSchema.js");
 const fn = "placephoto";
 module.exports = class destinationnameController extends BaseController {
-
-  // Admin: Set destination visibility
-  async setDestinationVisibility(req, res) {
-    try {
-      const { destinationId, isVisible } = req.body;
-      const destination = await SelectedDestination.findByIdAndUpdate(
-        destinationId,
-        { isVisible },
-        { new: true }
-      );
-      if (!destination) return res.status(404).json({ message: 'Destination not found' });
-      res.json({ message: 'Visibility updated', destination });
-    } catch (err) {
-      res.status(500).json({ message: 'Server error', error: err.message });
-    }
-  }
-
-  // User: Get only visible destinations
-  async getVisibleDestinations(req, res) {
-    try {
-      const destinations = await SelectedDestination.find({ isVisible: true });
-      res.json(destinations);
-    } catch (err) {
-      res.status(500).json({ message: 'Server error', error: err.message });
-    }
-  }
   async RegisterDestination(req, res) {
     try {
       // const tokenData = req.userData;

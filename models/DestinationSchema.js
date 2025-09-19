@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 function getISTTime() {
   const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC +5:30
   const now = new Date();
@@ -12,6 +13,18 @@ const DestinationSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     required: true
+  },
+  price: {
+    type: Number,
+    default: 0
+  },
+  day_night: {
+    type: String,
+    default: ''
+  },
+  rating: {
+    type: Number,
+    default: 0
   },
   destination_category_id: [{ type: mongoose.Schema.Types.ObjectId }],
   how_to_reach: {
@@ -28,17 +41,17 @@ const DestinationSchema = new mongoose.Schema({
   },
   status: {
     type: Boolean,
-    default: 1 //1=active,0=block
+    default: 1 // 1=active, 0=block
   },
   most_loved_destionation: {
     type: Boolean,
     default: false
   }
-},{
+}, {
   timestamps: {
     currentTime: () => getISTTime() // Use custom function for timestamps
   }
 });
 
-const destinationSchema = new mongoose.model("Destination", DestinationSchema);
-module.exports = destinationSchema;
+// Create and export the Mongoose model
+module.exports = mongoose.model("Destination", DestinationSchema);
