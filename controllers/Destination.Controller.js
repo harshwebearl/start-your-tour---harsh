@@ -1167,7 +1167,6 @@ module.exports = class destinationnameController extends BaseController {
           });
         }
       }
-
       // Process Packages to maintain the original response structure
       for (let i = 0; i < destinationDetails.length; i++) {
         if (destinationDetails[i].Packages) {
