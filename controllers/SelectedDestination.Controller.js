@@ -29,7 +29,7 @@ exports.getDestinationsForCategory = async (req, res) => {
 
         res.json({
             category_id: categoryId,
-            category_name: category ? category.name : '',
+            category_name: category ? (category.category_name || category.name) : '',
             is_visible: selected.isVisible || false,
             destinations: formattedDestinations
         });
@@ -62,7 +62,7 @@ exports.getPackagesForCategoryAndDestination = async (req, res) => {
         // Format response
         const response = {
             category_id: categoryId,
-            category_name: category ? category.name : '',
+            category_name: category ? (category.category_name || category.name) : '',
             category_visible: selectedDest.isVisible || false,
             destination_id: destDetails._id,
             destination_name: destDetails.name || destDetails.destination_name || '',
@@ -122,7 +122,7 @@ exports.getPackagesForCategory = async (req, res) => {
 
         res.json({
             category_id: category,
-            category_name: categoryDetails ? categoryDetails.name : '',
+            category_name: categoryDetails ? (categoryDetails.category_name || categoryDetails.name) : '',
             category_visible: selectedDest.isVisible || false,
             destinations: formattedData
         });
@@ -151,7 +151,7 @@ exports.getPackagesForDestination = async (req, res) => {
             const category = await DestinationCategory.findById(selectedDest.category);
             categoryInfo = {
                 category_id: selectedDest.category,
-                category_name: category ? category.name : '',
+                category_name: category ? (category.category_name || category.name) : '',
                 category_visible: selectedDest.isVisible || false
             };
         }
@@ -208,7 +208,7 @@ exports.selectDestinationForCategory = async (req, res) => {
             message: 'Destinations selected/updated successfully',
             data: {
                 category_id: categoryId,
-                category_name: categoryDetails ? categoryDetails.name : '',
+                category_name: categoryDetails ? (categoryDetails.category_name || categoryDetails.name) : '',
                 destinations_selected: updated.destinations.length,
                 is_visible: updated.isVisible,
                 selected_destinations: updated
@@ -222,7 +222,7 @@ exports.selectDestinationForCategory = async (req, res) => {
 // User: Get only visible destinations with categories
 exports.getVisibleDestinations = async (req, res) => {
     try {
-        const visibleSelected = await SelectedDestination.find({ isVisible: true }).populate('category', 'name');
+        const visibleSelected = await SelectedDestination.find({ isVisible: true }).populate('category', 'category_name name');
 
         if (!visibleSelected.length) {
             return res.json([]);
@@ -245,7 +245,7 @@ exports.getVisibleDestinations = async (req, res) => {
         const response = await Promise.all(visibleSelected.map(async selected => {
             return {
                 category_id: selected.category._id,
-                category_name: selected.category.category_name || '',
+                category_name: selected.category.category_name || selected.category.name || '',
                 is_visible: selected.isVisible,
                 destinations: await Promise.all(
                     destinations
@@ -298,12 +298,12 @@ exports.getVisibleDestinations = async (req, res) => {
 exports.getAllSelectedCategories = async (req, res) => {
     try {
         const selectedCategories = await SelectedDestination.find()
-            .populate('category', 'name')
+            .populate('category', 'category_name name')
             .populate('destinations', 'name destination_name price day_night rating');
 
         const formattedResponse = selectedCategories.map(selected => ({
             category_id: selected.category._id,
-            category_name: selected.category.name || '',
+            category_name: selected.category.category_name || selected.category.name || '',
             is_visible: selected.isVisible,
             destinations_count: selected.destinations.length,
             destinations: selected.destinations.map(dest => ({
